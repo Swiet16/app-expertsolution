@@ -105,9 +105,58 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="flex-1 min-w-0">
           <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-8 max-w-7xl mx-auto">
             <div className="mb-4 flex justify-end"><PushNotifications userId={ctx?.userId} /></div>
-            {children}
+            {isBanned ? <BannedScreen status={banStatus} onSignOut={signOut} /> : children}
           </div>
         </main>
+      </div>
+    </div>
+  );
+}
+
+function BannedScreen({ status, onSignOut }: { status: any; onSignOut: () => void }) {
+  const until = status?.banned_until ? new Date(status.banned_until) : null;
+  return (
+    <div className="max-w-xl mx-auto mt-10">
+      <div className="rounded-3xl overflow-hidden shadow-elegant bg-card border">
+        <div className="bg-gradient-to-r from-destructive to-rose-600 p-6 text-white">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-white/20 grid place-items-center">
+              <Shield className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-widest opacity-80">Account restricted</div>
+              <div className="text-xl font-extrabold">Your access is paused</div>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 space-y-3">
+          {status?.reason && (
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason</div>
+              <p className="text-sm mt-1">{status.reason}</p>
+            </div>
+          )}
+          {status?.admin_message && (
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message from admin</div>
+              <p className="text-sm mt-1">{status.admin_message}</p>
+            </div>
+          )}
+          {until && (
+            <div className="text-sm text-muted-foreground">
+              Restricted until <span className="font-medium text-foreground">{until.toLocaleString()}</span>
+            </div>
+          )}
+          {status?.contact_info && (
+            <div className="rounded-xl bg-muted p-3 text-sm">
+              <div className="font-semibold mb-1">Contact support</div>
+              <div className="text-muted-foreground">{status.contact_info}</div>
+            </div>
+          )}
+          <Button onClick={onSignOut} variant="outline" className="w-full">
+            <LogOut className="h-4 w-4 mr-2" /> Sign out
+          </Button>
+        </div>
       </div>
     </div>
   );
