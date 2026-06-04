@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   LayoutDashboard, ListTodo, Video, Wallet, TrendingUp,
-  User, Bell, Star, Shield, Crown, LogOut, Menu, Sparkles, Package,
+  User, Bell, Star, Shield, Crown, LogOut, Menu, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserContext } from "@/lib/auth.functions";
 import { toast } from "sonner";
 import { PushNotifications } from "@/components/push-notifications";
+import { BrandLogo } from "@/components/brand-logo";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -38,6 +39,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     enabled: authReady,
     retry: false,
   });
+  const { data: banStatus } = useQuery({
+    queryKey: ["my-ban"],
+    enabled: authReady,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_my_ban_status");
+      return data as any;
+    },
+    refetchInterval: 60000,
+  });
+  const isBanned = !!(banStatus && (banStatus.is_banned || banStatus.banned));
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   useEffect(() => setOpen(false), [pathname]);
@@ -75,9 +86,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SidebarContent ctx={ctx} onSignOut={signOut} />
           </SheetContent>
         </Sheet>
-        <Link to="/dashboard" className="flex items-center gap-2 font-semibold">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Expert Solutions
+        <Link to="/dashboard" aria-label="Home">
+          <BrandLogo size="sm" />
         </Link>
         <Link to="/profile" aria-label="Profile">
           <Avatar className="h-8 w-8">
@@ -95,9 +105,58 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="flex-1 min-w-0">
           <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-8 max-w-7xl mx-auto">
             <div className="mb-4 flex justify-end"><PushNotifications userId={ctx?.userId} /></div>
-            {children}
+            {isBanned ? <BannedScreen status={banStatus} onSignOut={signOut} /> : children}
           </div>
         </main>
+      </div>
+    </div>
+  );
+}
+
+function BannedScreen({ status, onSignOut }: { status: any; onSignOut: () => void }) {
+  const until = status?.banned_until ? new Date(status.banned_until) : null;
+  return (
+    <div className="max-w-xl mx-auto mt-10">
+      <div className="rounded-3xl overflow-hidden shadow-elegant bg-card border">
+        <div className="bg-gradient-to-r from-destructive to-rose-600 p-6 text-white">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-white/20 grid place-items-center">
+              <Shield className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-widest opacity-80">Account restricted</div>
+              <div className="text-xl font-extrabold">Your access is paused</div>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 space-y-3">
+          {status?.reason && (
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason</div>
+              <p className="text-sm mt-1">{status.reason}</p>
+            </div>
+          )}
+          {status?.admin_message && (
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message from admin</div>
+              <p className="text-sm mt-1">{status.admin_message}</p>
+            </div>
+          )}
+          {until && (
+            <div className="text-sm text-muted-foreground">
+              Restricted until <span className="font-medium text-foreground">{until.toLocaleString()}</span>
+            </div>
+          )}
+          {status?.contact_info && (
+            <div className="rounded-xl bg-muted p-3 text-sm">
+              <div className="font-semibold mb-1">Contact support</div>
+              <div className="text-muted-foreground">{status.contact_info}</div>
+            </div>
+          )}
+          <Button onClick={onSignOut} variant="outline" className="w-full">
+            <LogOut className="h-4 w-4 mr-2" /> Sign out
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -114,15 +173,10 @@ function SidebarContent({
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="px-5 py-5 border-b flex items-center gap-2">
-        <div className="h-9 w-9 rounded-lg bg-gradient-primary grid place-items-center text-primary-foreground shadow-glow">
-          <Sparkles className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="font-semibold leading-tight">Expert Solutions</div>
-          <div className="text-xs text-muted-foreground">Earn. Verify. Withdraw.</div>
-        </div>
+      <div className="px-5 py-5 border-b">
+        <BrandLogo size="md" showTagline />
       </div>
+
 
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
         {NAV.map((item) => {

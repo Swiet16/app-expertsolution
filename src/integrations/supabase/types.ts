@@ -528,6 +528,7 @@ export type Database = {
           country: string | null
           created_at: string
           date_of_birth: string | null
+          details_locked_at: string | null
           full_name: string | null
           gender: string | null
           id: string
@@ -544,6 +545,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
+          details_locked_at?: string | null
           full_name?: string | null
           gender?: string | null
           id: string
@@ -560,6 +562,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
+          details_locked_at?: string | null
           full_name?: string | null
           gender?: string | null
           id?: string
