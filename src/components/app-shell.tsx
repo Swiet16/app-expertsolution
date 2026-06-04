@@ -177,7 +177,7 @@ function SidebarContent({
   return (
     <div className="flex flex-col w-full h-full">
       <div className="px-5 py-5 border-b">
-        <BrandLogo size="md" showTagline />
+        <BrandLogo size="md" showTagline showWordmark />
       </div>
 
 
