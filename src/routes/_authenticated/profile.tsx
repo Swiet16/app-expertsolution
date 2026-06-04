@@ -206,19 +206,33 @@ function Field({
 }
 
 function AvatarUpload({ userId, onChange }: { userId: string; onChange: (url: string | null) => void }) {
+  const [uploading, setUploading] = useState(false);
+
+  async function handle(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      onChange(data.publicUrl);
+    } catch (err: any) {
+      toast.error(err.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
   return (
-    <div className="rounded-full bg-primary text-primary-foreground p-2 shadow-glow hover:scale-105 transition">
-      <Camera className="h-4 w-4" />
+    <label className="block cursor-pointer rounded-full bg-primary text-primary-foreground p-2 shadow-glow hover:scale-105 transition ring-2 ring-white/50">
+      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
       <span className="sr-only">Change photo</span>
-      <div className="absolute inset-0 opacity-0">
-        <FileUpload
-          bucket="avatars"
-          pathPrefix={userId}
-          accept="image/jpeg,image/png,image/webp"
-          value={null}
-          onChange={onChange}
-        />
-      </div>
-    </div>
+      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handle} disabled={uploading} />
+    </label>
   );
 }
