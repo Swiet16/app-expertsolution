@@ -104,9 +104,9 @@ function ProfilePage() {
               <AvatarImage src={form.avatar_url ?? undefined} />
               <AvatarFallback className="text-2xl bg-white/20 text-primary-foreground">{initial}</AvatarFallback>
             </Avatar>
-            <label className="absolute -bottom-1 -right-1 cursor-pointer">
+            <div className="absolute -bottom-1 -right-1">
               <AvatarUpload userId={me?.user?.id ?? "anon"} onChange={saveAvatar} />
-            </label>
+            </div>
           </div>
           <div className="text-center sm:text-left min-w-0 flex-1">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{form.full_name || "Your name"}</h1>
