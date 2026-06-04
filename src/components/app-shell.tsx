@@ -15,6 +15,7 @@ import { getCurrentUserContext } from "@/lib/auth.functions";
 import { toast } from "sonner";
 import { PushNotifications } from "@/components/push-notifications";
 import { BrandLogo } from "@/components/brand-logo";
+import { AppLoader } from "@/components/app-loader";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
