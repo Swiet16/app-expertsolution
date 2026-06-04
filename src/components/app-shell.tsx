@@ -39,6 +39,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     enabled: authReady,
     retry: false,
   });
+  const { data: banStatus } = useQuery({
+    queryKey: ["my-ban"],
+    enabled: authReady,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_my_ban_status");
+      return data as any;
+    },
+    refetchInterval: 60000,
+  });
+  const isBanned = !!(banStatus && (banStatus.is_banned || banStatus.banned));
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   useEffect(() => setOpen(false), [pathname]);
