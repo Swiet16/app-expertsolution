@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   LayoutDashboard, ListTodo, Video, Wallet, TrendingUp,
-  User, Bell, Star, Shield, Crown, LogOut, Menu, Sparkles, Package,
+  User, Bell, Star, Shield, Crown, LogOut, Menu, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserContext } from "@/lib/auth.functions";
 import { toast } from "sonner";
 import { PushNotifications } from "@/components/push-notifications";
+import { BrandLogo } from "@/components/brand-logo";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
