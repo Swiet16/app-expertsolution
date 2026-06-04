@@ -25,11 +25,34 @@ type Item = {
   created_at: string;
   status?: string;
   isMine?: boolean;
+  avatarUrl?: string | null;
 };
 
 function initials(name?: string | null) {
   if (!name) return "U";
   return name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+}
+
+// Deterministic colorful gradient per name (so each reviewer looks unique).
+const AVATAR_GRADIENTS = [
+  ["#f97316", "#ea580c"],
+  ["#3b82f6", "#1d4ed8"],
+  ["#10b981", "#047857"],
+  ["#a855f7", "#7e22ce"],
+  ["#ec4899", "#be185d"],
+  ["#06b6d4", "#0e7490"],
+  ["#f59e0b", "#b45309"],
+  ["#ef4444", "#b91c1c"],
+  ["#14b8a6", "#0f766e"],
+  ["#6366f1", "#4338ca"],
+  ["#84cc16", "#4d7c0f"],
+  ["#d946ef", "#a21caf"],
+];
+function gradientFor(name?: string | null) {
+  const s = name || "U";
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[h % AVATAR_GRADIENTS.length];
 }
 
 function timeAgo(iso: string) {
