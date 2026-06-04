@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
+import { OfflineGate } from "@/components/offline-gate";
 
 function NotFoundComponent() {
   return (
@@ -78,21 +79,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { title: "Expert Solutions — Trading · Online Work · Consultancy" },
+      { name: "description", content: "Earn rewards by completing verified tasks with Expert Solutions." },
+      { name: "author", content: "Expert Solutions" },
+      { name: "theme-color", content: "#0b1020" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Expert Solutions" },
+      { property: "og:title", content: "Expert Solutions" },
+      { property: "og:description", content: "Earn rewards by completing verified tasks." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { property: "og:image", content: "/__l5e/assets-v1/6c0b3f5a-45d4-42bb-a769-fd6f442d0d2e/expert-solutions-logo.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/6c0b3f5a-45d4-42bb-a769-fd6f442d0d2e/expert-solutions-logo.png" },
+      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/6c0b3f5a-45d4-42bb-a769-fd6f442d0d2e/expert-solutions-logo.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -129,8 +135,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <OfflineGate>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </OfflineGate>
       <Toaster position="top-right" richColors />
     </QueryClientProvider>
   );

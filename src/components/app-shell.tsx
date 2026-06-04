@@ -15,6 +15,7 @@ import { getCurrentUserContext } from "@/lib/auth.functions";
 import { toast } from "sonner";
 import { PushNotifications } from "@/components/push-notifications";
 import { BrandLogo } from "@/components/brand-logo";
+import { AppLoader } from "@/components/app-loader";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -72,6 +73,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     toast.success("Signed out");
     navigate({ to: "/auth", replace: true });
   }
+
+  if (!authReady) return <AppLoader label="Preparing your workspace…" />;
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,7 +177,7 @@ function SidebarContent({
   return (
     <div className="flex flex-col w-full h-full">
       <div className="px-5 py-5 border-b">
-        <BrandLogo size="md" showTagline />
+        <BrandLogo size="md" showTagline showWordmark />
       </div>
 
 
