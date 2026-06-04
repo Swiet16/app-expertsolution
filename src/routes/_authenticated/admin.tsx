@@ -39,14 +39,16 @@ function AdminPage() {
         </div>
       )}
       <Tabs defaultValue="queue">
-        <TabsList>
-          <TabsTrigger value="queue">Task queue</TabsTrigger>
-          <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews</TabsTrigger>
-          <TabsTrigger value="purchases">Purchases</TabsTrigger>
-          <TabsTrigger value="joins">Plan joins</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1 pb-1">
+          <TabsList className="inline-flex w-max min-w-full">
+            <TabsTrigger value="queue">Task queue</TabsTrigger>
+            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
+            <TabsTrigger value="purchases">Purchases</TabsTrigger>
+            <TabsTrigger value="joins">Plan joins</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="queue"><TaskQueue /></TabsContent>
         <TabsContent value="withdrawals"><WithdrawalsQueue /></TabsContent>
         <TabsContent value="reviews"><ReviewsQueue /></TabsContent>

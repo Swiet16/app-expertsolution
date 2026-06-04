@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import logoAsset from "@/assets/expert-solutions-logo.png.asset.json";
+import { LogoIcon } from "@/components/logo-icon";
 
 interface Props {
   className?: string;
@@ -10,10 +10,10 @@ interface Props {
 }
 
 const sizeMap = {
-  sm: { img: "h-9", text: "text-base", tag: "text-[10px]" },
-  md: { img: "h-11", text: "text-lg", tag: "text-[11px]" },
-  lg: { img: "h-14", text: "text-2xl", tag: "text-xs" },
-  xl: { img: "h-20", text: "text-3xl", tag: "text-sm" },
+  sm: { icon: "h-9 w-9", text: "text-base", tag: "text-[10px]" },
+  md: { icon: "h-11 w-11", text: "text-lg", tag: "text-[11px]" },
+  lg: { icon: "h-14 w-14", text: "text-2xl", tag: "text-xs" },
+  xl: { icon: "h-20 w-20", text: "text-3xl", tag: "text-sm" },
 };
 
 export function BrandLogo({
@@ -25,23 +25,22 @@ export function BrandLogo({
 }: Props) {
   const s = sizeMap[size];
   const onPrimary = variant === "onPrimary";
+
   return (
-    <div className={cn("flex items-center gap-2.5 group", className)}>
+    <div className={cn("flex items-center gap-2.5 group select-none", className)}>
       <div className="relative shrink-0">
         <span
           aria-hidden
-          className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-cyan-400/40 via-primary/40 to-fuchsia-500/30 blur-xl opacity-70 group-hover:opacity-100 transition"
+          className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-cyan-400/40 via-primary/40 to-fuchsia-500/30 blur-xl opacity-60 group-hover:opacity-90 transition"
         />
-        <img
-          src={logoAsset.url}
-          alt="Expert Solutions"
+        <LogoIcon
           className={cn(
-            "relative w-auto object-contain rounded-2xl drop-shadow-[0_0_18px_rgba(56,189,248,0.45)] select-none ring-1 ring-white/10",
-            s.img,
+            "relative rounded-[13px] drop-shadow-[0_0_14px_rgba(56,189,248,0.5)] ring-1 ring-white/10",
+            s.icon,
           )}
-          draggable={false}
         />
       </div>
+
       {showWordmark && (
         <div className="leading-tight">
           <div

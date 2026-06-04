@@ -1,4 +1,4 @@
-import logoAsset from "@/assets/expert-solutions-logo.png.asset.json";
+import { LogoIcon } from "@/components/logo-icon";
 
 export function AppLoader({ label = "Loading…" }: { label?: string }) {
   return (
@@ -6,11 +6,7 @@ export function AppLoader({ label = "Loading…" }: { label?: string }) {
       <div className="flex flex-col items-center gap-6">
         <div className="relative">
           <span className="absolute -inset-6 rounded-full bg-gradient-to-tr from-cyan-400/30 via-primary/40 to-fuchsia-500/30 blur-2xl animate-pulse" />
-          <img
-            src={logoAsset.url}
-            alt="Expert Solutions"
-            className="relative h-24 w-auto object-contain rounded-3xl ring-1 ring-white/10 drop-shadow-[0_0_28px_rgba(56,189,248,0.55)] animate-[pulse_2s_ease-in-out_infinite]"
-          />
+          <LogoIcon className="relative h-24 w-24 drop-shadow-[0_0_28px_rgba(56,189,248,0.55)] animate-[pulse_2s_ease-in-out_infinite]" />
         </div>
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:-0.3s]" />
