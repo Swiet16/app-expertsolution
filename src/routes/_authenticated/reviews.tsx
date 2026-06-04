@@ -25,11 +25,34 @@ type Item = {
   created_at: string;
   status?: string;
   isMine?: boolean;
+  avatarUrl?: string | null;
 };
 
 function initials(name?: string | null) {
   if (!name) return "U";
   return name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+}
+
+// Deterministic colorful gradient per name (so each reviewer looks unique).
+const AVATAR_GRADIENTS = [
+  ["#f97316", "#ea580c"],
+  ["#3b82f6", "#1d4ed8"],
+  ["#10b981", "#047857"],
+  ["#a855f7", "#7e22ce"],
+  ["#ec4899", "#be185d"],
+  ["#06b6d4", "#0e7490"],
+  ["#f59e0b", "#b45309"],
+  ["#ef4444", "#b91c1c"],
+  ["#14b8a6", "#0f766e"],
+  ["#6366f1", "#4338ca"],
+  ["#84cc16", "#4d7c0f"],
+  ["#d946ef", "#a21caf"],
+];
+function gradientFor(name?: string | null) {
+  const s = name || "U";
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[h % AVATAR_GRADIENTS.length];
 }
 
 function timeAgo(iso: string) {
@@ -70,7 +93,7 @@ function ReviewsPage() {
     queryFn: async () => {
       const ids = Array.from(new Set((real?.rows ?? []).map((r: any) => r.reviewer_id))).filter(Boolean);
       if (!ids.length) return {} as Record<string, any>;
-      const { data } = await supabase.from("profiles").select("id, full_name, username, city, country").in("id", ids);
+      const { data } = await supabase.from("profiles").select("id, full_name, username, city, country, avatar_url").in("id", ids);
       const m: Record<string, any> = {};
       (data ?? []).forEach((p: any) => (m[p.id] = p));
       return m;
@@ -104,6 +127,7 @@ function ReviewsPage() {
         created_at: r.created_at,
         status: r.status,
         isMine: uid === r.reviewer_id,
+        avatarUrl: p?.avatar_url ?? null,
       };
     });
     const b: Item[] = (fakes ?? []).map((f: any) => ({
@@ -114,6 +138,7 @@ function ReviewsPage() {
       content: f.content,
       created_at: f.created_at,
       status: "approved",
+      avatarUrl: null,
     }));
     return [...a, ...b];
   }, [real, fakes, profilesById]);
@@ -207,10 +232,19 @@ function ReviewsPage() {
           <Card key={r.id} className="glass overflow-hidden">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold text-primary-foreground shrink-0"
-                     style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))" }}>
-                  {initials(r.name)}
-                </div>
+              {(() => {
+                const [c1, c2] = gradientFor(r.name);
+                return (
+                  <div className="h-11 w-11 rounded-full shrink-0 ring-2 ring-background shadow-md overflow-hidden flex items-center justify-center text-sm font-bold text-white"
+                       style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
+                    {r.avatarUrl ? (
+                      <img src={r.avatarUrl} alt={r.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                      <span className="drop-shadow-sm">{initials(r.name)}</span>
+                    )}
+                  </div>
+                );
+              })()}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
