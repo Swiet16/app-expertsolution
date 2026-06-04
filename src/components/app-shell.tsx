@@ -1,10 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import {
   LayoutDashboard, ListTodo, Video, Wallet, TrendingUp,
-  User, Bell, Star, Shield, Crown, LogOut, Menu, Package,
+  User, Bell, Star, Shield, Crown, LogOut, Package,
+  MoreHorizontal, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -17,7 +17,15 @@ import { PushNotifications } from "@/components/push-notifications";
 import { BrandLogo } from "@/components/brand-logo";
 import { AppLoader } from "@/components/app-loader";
 
-const NAV = [
+const BOTTOM_NAV = [
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/tasks", label: "Tasks", icon: ListTodo },
+  { to: "/video-tasks", label: "Videos", icon: Video },
+  { to: "/wallet", label: "Wallet", icon: Wallet },
+  { to: "/profile", label: "Profile", icon: User },
+] as const;
+
+const SIDE_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/tasks", label: "Tasks", icon: ListTodo },
   { to: "/video-tasks", label: "Video Tasks", icon: Video },
@@ -29,17 +37,25 @@ const NAV = [
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
 
+const MORE_NAV = [
+  { to: "/packages", label: "Packages", icon: Package },
+  { to: "/earnings", label: "Earnings", icon: TrendingUp },
+  { to: "/reviews", label: "Reviews", icon: Star },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+] as const;
+
 export function AppShell({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const navigate = useNavigate();
-  const fetchCtx = useServerFn(getCurrentUserContext);
+
   const { data: ctx } = useQuery({
     queryKey: ["me"],
-    queryFn: () => fetchCtx(),
+    queryFn: getCurrentUserContext,
     enabled: authReady,
     retry: false,
   });
+
   const { data: banStatus } = useQuery({
     queryKey: ["my-ban"],
     enabled: authReady,
@@ -52,20 +68,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isBanned = !!(banStatus && (banStatus.is_banned || banStatus.banned));
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => setMoreOpen(false), [pathname]);
 
   useEffect(() => {
     let mounted = true;
-
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       if (data.session?.access_token) setAuthReady(true);
       else navigate({ to: "/auth", replace: true });
     });
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [navigate]);
 
   async function signOut() {
@@ -77,41 +89,170 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!authReady) return <AppLoader label="Preparing your workspace…" />;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between gap-2 px-4 h-14 border-b bg-background/80 backdrop-blur">
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Open menu">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-72">
-            <SidebarContent ctx={ctx} onSignOut={signOut} />
-          </SheetContent>
-        </Sheet>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* ── Mobile top header ─────────────────────────────────── */}
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between gap-2 px-4 h-14 border-b bg-background/90 backdrop-blur-md">
         <Link to="/dashboard" aria-label="Home">
-          <BrandLogo size="sm" />
+          <BrandLogo size="sm" showWordmark />
         </Link>
-        <Link to="/profile" aria-label="Profile">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={ctx?.profile?.avatar_url ?? undefined} />
-            <AvatarFallback>{(ctx?.profile?.full_name ?? "U")[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
-        </Link>
+        <div className="flex items-center gap-2">
+          <PushNotifications userId={ctx?.userId} />
+          <Link to="/profile" aria-label="Profile">
+            <Avatar className="h-8 w-8 ring-2 ring-primary/20">
+              <AvatarImage src={ctx?.profile?.avatar_url ?? undefined} />
+              <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                {(ctx?.profile?.full_name ?? "U")[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+        </div>
       </header>
 
-      <div className="lg:flex">
-        <aside className="hidden lg:flex sticky top-0 h-screen w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground">
-          <SidebarContent ctx={ctx} onSignOut={signOut} />
+      {/* ── Desktop layout ────────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0">
+        <aside className="hidden lg:flex sticky top-0 h-screen w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex-col">
+          <DesktopSidebar ctx={ctx} onSignOut={signOut} pathname={pathname} />
         </aside>
 
-        <main className="flex-1 min-w-0">
-          <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-8 max-w-7xl mx-auto">
-            <div className="mb-4 flex justify-end"><PushNotifications userId={ctx?.userId} /></div>
+        <main className="flex-1 min-w-0 pb-24 lg:pb-0">
+          <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8 max-w-7xl mx-auto">
+            <div className="hidden lg:flex mb-4 justify-end">
+              <PushNotifications userId={ctx?.userId} />
+            </div>
             {isBanned ? <BannedScreen status={banStatus} onSignOut={signOut} /> : children}
           </div>
         </main>
       </div>
+
+      {/* ── Mobile bottom navigation bar ──────────────────────── */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 safe-area-bottom">
+        <div className="relative bg-background/95 backdrop-blur-xl border-t border-border/60 shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
+          <div className="flex items-stretch h-16">
+            {BOTTOM_NAV.map((item) => {
+              const active = pathname.startsWith(item.to);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="flex-1 flex flex-col items-center justify-center gap-1 relative group"
+                >
+                  <div
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1 w-full h-full transition-all duration-200",
+                    )}
+                  >
+                    {active && (
+                      <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-b-full bg-primary" />
+                    )}
+                    <div
+                      className={cn(
+                        "flex items-center justify-center h-8 w-8 rounded-xl transition-all duration-200",
+                        active ? "bg-primary text-primary-foreground shadow-md shadow-primary/30" : "text-muted-foreground group-active:scale-95",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium leading-none transition-colors",
+                        active ? "text-primary" : "text-muted-foreground",
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+
+            {/* ── More sheet trigger ── */}
+            <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+              <SheetTrigger asChild>
+                <button className="flex-1 flex flex-col items-center justify-center gap-1 group">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-xl text-muted-foreground group-active:scale-95 transition-transform">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] font-medium leading-none text-muted-foreground">More</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="rounded-t-3xl px-0 pt-4 pb-0 max-h-[80vh]">
+                <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-5" />
+
+                {/* User card */}
+                <div className="flex items-center gap-3 px-5 py-3 mb-2">
+                  <Avatar className="h-11 w-11 ring-2 ring-primary/20">
+                    <AvatarImage src={ctx?.profile?.avatar_url ?? undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                      {(ctx?.profile?.full_name ?? "U")[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm truncate">{ctx?.profile?.full_name ?? "Member"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      ${Number(ctx?.wallet?.available_balance ?? 0).toFixed(2)} available
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-3 pb-2 space-y-1">
+                  {MORE_NAV.map((item) => {
+                    const Icon = item.icon;
+                    const active = pathname.startsWith(item.to);
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-colors",
+                          active ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted",
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="flex-1">{item.label}</span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </Link>
+                    );
+                  })}
+
+                  {ctx?.isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium text-foreground hover:bg-muted"
+                    >
+                      <Shield className="h-5 w-5" />
+                      <span className="flex-1">Admin</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </Link>
+                  )}
+                  {ctx?.isSuperAdmin && (
+                    <Link
+                      to="/super-admin"
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium text-foreground hover:bg-muted"
+                    >
+                      <Crown className="h-5 w-5" />
+                      <span className="flex-1">Super Admin</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </Link>
+                  )}
+                </div>
+
+                <div className="px-3 pt-1 pb-safe border-t mt-2">
+                  <button
+                    onClick={signOut}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium text-destructive w-full hover:bg-destructive/10 transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    Sign out
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+          {/* iOS safe area */}
+          <div className="h-[env(safe-area-inset-bottom)] bg-background" />
+        </div>
+      </nav>
     </div>
   );
 }
@@ -141,19 +282,13 @@ function BannedScreen({ status, onSignOut }: { status: any; onSignOut: () => voi
           )}
           {status?.admin_message && (
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message from admin</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin message</div>
               <p className="text-sm mt-1">{status.admin_message}</p>
             </div>
           )}
           {until && (
             <div className="text-sm text-muted-foreground">
               Restricted until <span className="font-medium text-foreground">{until.toLocaleString()}</span>
-            </div>
-          )}
-          {status?.contact_info && (
-            <div className="rounded-xl bg-muted p-3 text-sm">
-              <div className="font-semibold mb-1">Contact support</div>
-              <div className="text-muted-foreground">{status.contact_info}</div>
             </div>
           )}
           <Button onClick={onSignOut} variant="outline" className="w-full">
@@ -165,24 +300,23 @@ function BannedScreen({ status, onSignOut }: { status: any; onSignOut: () => voi
   );
 }
 
-function SidebarContent({
+function DesktopSidebar({
   ctx,
   onSignOut,
+  pathname,
 }: {
   ctx: Awaited<ReturnType<typeof getCurrentUserContext>> | undefined;
   onSignOut: () => void;
+  pathname: string;
 }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
   return (
     <div className="flex flex-col w-full h-full">
       <div className="px-5 py-5 border-b">
         <BrandLogo size="md" showTagline showWordmark />
       </div>
 
-
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-        {NAV.map((item) => {
+        {SIDE_NAV.map((item) => {
           const active = pathname.startsWith(item.to);
           const Icon = item.icon;
           return (
@@ -190,7 +324,7 @@ function SidebarContent({
               key={item.to}
               to={item.to}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors min-h-11",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/60",
@@ -203,12 +337,18 @@ function SidebarContent({
         })}
 
         {ctx?.isAdmin && (
-          <Link to="/admin" className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/60 min-h-11">
+          <Link
+            to="/admin"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/60 min-h-11"
+          >
             <Shield className="h-4 w-4" /> Admin
           </Link>
         )}
         {ctx?.isSuperAdmin && (
-          <Link to="/super-admin" className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/60 min-h-11">
+          <Link
+            to="/super-admin"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/60 min-h-11"
+          >
             <Crown className="h-4 w-4" /> Super Admin
           </Link>
         )}
@@ -218,7 +358,9 @@ function SidebarContent({
         <div className="flex items-center gap-2 px-2">
           <Avatar className="h-9 w-9">
             <AvatarImage src={ctx?.profile?.avatar_url ?? undefined} />
-            <AvatarFallback>{(ctx?.profile?.full_name ?? "U")[0]?.toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+              {(ctx?.profile?.full_name ?? "U")[0]?.toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium truncate">{ctx?.profile?.full_name ?? "Member"}</div>
@@ -227,7 +369,7 @@ function SidebarContent({
             </div>
           </div>
         </div>
-        <Button variant="ghost" className="w-full justify-start" onClick={onSignOut}>
+        <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={onSignOut}>
           <LogOut className="h-4 w-4 mr-2" /> Sign out
         </Button>
       </div>

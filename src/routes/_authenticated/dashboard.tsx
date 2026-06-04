@@ -1,41 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { getCurrentUserContext } from "@/lib/auth.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, TrendingUp, ListTodo, Video } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({
-    meta: [
-      { title: "Dashboard — Expert Solutions" },
-      { name: "description", content: "Your earnings, tasks, and activity overview." },
-    ],
-  }),
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const [authReady, setAuthReady] = useState(false);
-  const fetchCtx = useServerFn(getCurrentUserContext);
   const { data } = useQuery({
     queryKey: ["me"],
-    queryFn: () => fetchCtx(),
-    enabled: authReady,
+    queryFn: getCurrentUserContext,
     retry: false,
   });
-
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted && data.session?.access_token) setAuthReady(true);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const stats = [
     { label: "Available", value: `$${Number(data?.wallet?.available_balance ?? 0).toFixed(2)}`, icon: Wallet },
@@ -50,7 +28,7 @@ function DashboardPage() {
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Welcome back{data?.profile?.full_name ? `, ${data.profile.full_name.split(" ")[0]}` : ""}
         </h1>
-        <p className="text-muted-foreground mt-1">Here's your account at a glance.</p>
+        <p className="text-muted-foreground mt-1">Here&apos;s your account at a glance.</p>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((s) => (
@@ -66,9 +44,14 @@ function DashboardPage() {
         ))}
       </div>
       <Card className="glass">
-        <CardHeader><CardTitle>What's next</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>What&apos;s next</CardTitle>
+        </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>The Video Task system, secure player, watch tracking, file uploads, and admin dashboards arrive in the next sessions per the approved plan.</p>
+          <p>
+            The Video Task system, secure player, watch tracking, file uploads, and admin dashboards arrive in the next
+            sessions per the approved plan.
+          </p>
         </CardContent>
       </Card>
     </div>
