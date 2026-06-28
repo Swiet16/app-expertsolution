@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  Check, Sparkles, Copy, Upload,
-  Key, TrendingUp, Calendar, CalendarDays, Phone,
+  Check, Sparkles, Copy, Upload, Key, TrendingUp,
+  Calendar, CalendarDays, Phone, ArrowRight, Zap,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/packages")({
@@ -23,11 +23,23 @@ export const Route = createFileRoute("/_authenticated/packages")({
   component: PackagesPage,
 });
 
-const OPAY_NUMBER = "03371441111";
-const MASHREQ_ACCOUNT = "089120147898";
+const OPAY = "03371441111";
+const MASHREQ = "089120147898";
 
 function pkr(val: number) {
   return `₨${val.toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
+}
+
+function parseFeatures(features: any): string[] {
+  if (!features) return [];
+  if (Array.isArray(features)) return features.flatMap((f) =>
+    typeof f === "string" ? [f] : []
+  );
+  if (typeof features === "string") {
+    try { const p = JSON.parse(features); if (Array.isArray(p)) return p; } catch {}
+    return features.split("\n").map((s: string) => s.trim()).filter(Boolean);
+  }
+  return [];
 }
 
 function PackagesPage() {
@@ -59,53 +71,52 @@ function PackagesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <Sparkles className="h-6 w-6 text-primary" /> Packages
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Choose your earning plan, pay via OPay or Mashreq Bank, then upload your screenshot.
+        <p className="text-muted-foreground mt-1 text-sm">
+          Choose your plan · Pay via OPay or Mashreq Bank · Start earning PKR daily.
         </p>
       </div>
 
+      {/* Payment details */}
       <PaymentInfo />
+
+      {/* Redeem key */}
       <RedeemKeyCard />
 
+      {/* Package grid */}
       {isLoading ? (
-        <p className="text-muted-foreground">Loading packages…</p>
+        <p className="text-muted-foreground text-sm py-4">Loading packages…</p>
       ) : !packages?.length ? (
-        <PackageFallback />
+        <FallbackGrid />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {packages.map((p: any) => (
-            <PackageCard key={p.id} pkg={p} />
-          ))}
+          {packages.map((p: any) => <PackageCard key={p.id} pkg={p} />)}
         </div>
       )}
 
+      {/* My purchases */}
       {!!myPurchases?.length && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Your Purchase Requests</h2>
-          <div className="grid gap-2">
-            {myPurchases.map((pp: any) => (
-              <Card key={pp.id} className="glass">
-                <CardContent className="py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">
-                      {pkr(Number(pp.amount))} · {pp.payment_method}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(pp.created_at).toLocaleString()}
-                    </div>
-                    {pp.admin_note && (
-                      <div className="text-xs mt-1 text-muted-foreground">Note: {pp.admin_note}</div>
-                    )}
-                  </div>
-                  <StatusBadge status={pp.status} />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <div className="space-y-2 pt-2">
+          <h2 className="text-base font-semibold">Your Purchase Requests</h2>
+          {myPurchases.map((pp: any) => (
+            <div
+              key={pp.id}
+              className="flex items-center justify-between gap-3 rounded-xl border bg-card/60 px-4 py-3 text-sm"
+            >
+              <div className="min-w-0">
+                <div className="font-medium">{pkr(Number(pp.amount))} · {pp.payment_method}</div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(pp.created_at).toLocaleString()}
+                  {pp.admin_note && ` · ${pp.admin_note}`}
+                </div>
+              </div>
+              <StatusBadge status={pp.status} />
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -113,299 +124,246 @@ function PackagesPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const variant =
-    status === "approved" ? "default" : status === "rejected" ? "destructive" : "secondary";
-  return <Badge variant={variant as any}>{status}</Badge>;
+  const v = status === "approved" ? "default" : status === "rejected" ? "destructive" : "secondary";
+  return <Badge variant={v as any} className="capitalize shrink-0">{status}</Badge>;
 }
 
+/* ── Payment info ─────────────────────────────── */
 function PaymentInfo() {
-  function copy(text: string) {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied!");
-  }
+  function copy(t: string) { navigator.clipboard.writeText(t); toast.success("Copied!"); }
   return (
-    <Card className="glass border-primary/30">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Phone className="h-4 w-4 text-primary" /> Payment Details
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Send payment to one of these accounts, then submit your package request with the screenshot as proof.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-2 text-sm">
-        <PayRow label="OPay" value={OPAY_NUMBER} onCopy={() => copy(OPAY_NUMBER)} />
-        <PayRow label="Mashreq Bank" value={MASHREQ_ACCOUNT} onCopy={() => copy(MASHREQ_ACCOUNT)} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function PayRow({ label, value, onCopy }: { label: string; value: string; onCopy: () => void }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg bg-card/60 border px-3 py-2.5">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">{label}</span>
-        <span className="font-mono font-medium truncate text-sm">{value}</span>
+    <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+      <div className="flex items-center gap-2 mb-3 text-sm font-semibold">
+        <Phone className="h-4 w-4 text-primary" /> Payment Accounts
       </div>
-      <Button size="sm" variant="ghost" onClick={onCopy} className="shrink-0 h-7 px-2">
-        <Copy className="h-3.5 w-3.5" />
-      </Button>
+      <div className="space-y-2">
+        {[
+          { label: "OPay", value: OPAY },
+          { label: "Mashreq Bank", value: MASHREQ },
+        ].map((r) => (
+          <div key={r.label} className="flex items-center gap-2 justify-between bg-background/70 border rounded-xl px-3 py-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[11px] font-bold uppercase tracking-wide text-primary bg-primary/10 px-2 py-0.5 rounded-md shrink-0">{r.label}</span>
+              <span className="font-mono text-sm font-semibold truncate">{r.value}</span>
+            </div>
+            <Button size="sm" variant="ghost" className="h-7 px-2 shrink-0" onClick={() => copy(r.value)}>
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
+/* ── Redeem key ───────────────────────────────── */
 function RedeemKeyCard() {
   const qc = useQueryClient();
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function redeem() {
-    if (!key.trim()) return toast.error("Please enter an activation key");
+    if (!key.trim()) return toast.error("Enter an activation key");
     setBusy(true);
     try {
       const { data, error } = await supabase.rpc("redeem_activation_key", { _key: key.trim() });
-      if (error || !(data as any)?.success) {
-        toast.error((data as any)?.error ?? error?.message ?? "Invalid or already used key");
-      } else {
-        toast.success("Key redeemed! Your package is now active.");
-        setKey("");
-        qc.invalidateQueries();
-      }
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to redeem");
-    } finally {
-      setBusy(false);
-    }
+      if (error || !(data as any)?.success)
+        toast.error((data as any)?.error ?? error?.message ?? "Invalid key");
+      else { toast.success("Key redeemed! Package activated."); setKey(""); qc.invalidateQueries(); }
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
   }
 
   return (
-    <Card className="glass border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Key className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Have an Activation Key?
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Received a key from admin? Enter it here to instantly unlock your package.
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-2">
-          <Input
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="Enter activation key (e.g. KEY-XXXX-XXXX)"
-            className="font-mono"
-            onKeyDown={(e) => e.key === "Enter" && redeem()}
-          />
-          <Button
-            onClick={redeem}
-            disabled={busy}
-            className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            {busy ? "Redeeming…" : "Redeem"}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+      <div className="flex items-center gap-2 mb-2 text-sm font-semibold">
+        <Key className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Have an Activation Key?
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">Got a key from admin? Redeem it to instantly activate your package.</p>
+      <div className="flex gap-2">
+        <Input
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          placeholder="KEY-XXXX-XXXX"
+          className="font-mono text-sm"
+          onKeyDown={(e) => e.key === "Enter" && redeem()}
+        />
+        <Button onClick={redeem} disabled={busy} className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
+          {busy ? "…" : "Redeem"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
-/* ─── Static fallback (when DB has no packages) ─────────────────── */
+/* ── Package card (minimal front) ─────────────── */
 
-const FALLBACK_PACKAGES = [
-  {
-    name: "Starter",
-    price: 799,
-    tagline: "Video Watching",
-    description: "Perfect for beginners. Watch short videos daily and earn real PKR from day one.",
-    daily: 80, weekly: 560, monthly: 2400,
-    features: [
-      "Watch 5–10 videos per day",
-      "Daily earning ₨80",
-      "Weekly earning ₨560",
-      "Monthly earning ₨2,400",
-      "Withdraw via OPay or Mashreq Bank",
-      "24/7 customer support",
-    ],
-    featured: false,
-  },
-  {
-    name: "Professional",
-    price: 1299,
-    tagline: "Assignment Writing",
-    description: "Work on essay writing and college assignments. Ideal for students and skilled writers.",
-    daily: 250, weekly: 1750, monthly: 7500,
-    features: [
-      "Essay & assignment writing",
-      "College / university tasks",
-      "Daily earning ₨250",
-      "Weekly earning ₨1,750",
-      "Monthly earning ₨7,500",
-      "Priority task assignment",
-      "Withdraw via OPay or Mashreq Bank",
-    ],
-    featured: true,
-  },
-  {
-    name: "Premium",
-    price: 4500,
-    tagline: "Video + Data Entry",
-    description: "Top-tier plan combining video watching and data entry for maximum daily income.",
-    daily: 400, weekly: 2800, monthly: 12000,
-    features: [
-      "Video watching tasks",
-      "Data entry tasks",
-      "Daily earning ₨400",
-      "Weekly earning ₨2,800",
-      "Monthly earning ₨12,000",
-      "Highest task priority",
-      "VIP support",
-      "Bonus tasks available",
-    ],
-    featured: false,
-  },
+const CARD_THEMES = [
+  { from: "from-emerald-600", to: "to-emerald-800", accent: "text-emerald-400" },
+  { from: "from-violet-600", to: "to-violet-900", accent: "text-violet-300" },
+  { from: "from-amber-500", to: "to-orange-700", accent: "text-yellow-300" },
 ];
 
-function PackageFallback() {
-  return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {FALLBACK_PACKAGES.map((p) => (
-        <StaticPackageCard key={p.name} pkg={p} />
-      ))}
-    </div>
-  );
-}
+function PackageCard({ pkg }: { pkg: any }) {
+  const idx = (pkg.sort_order ?? 1) - 1;
+  const theme = CARD_THEMES[idx % CARD_THEMES.length];
+  const daily = Number(pkg.daily_earning ?? 0);
+  const features = parseFeatures(pkg.features);
+  const price = Number(pkg.price);
 
-function StaticPackageCard({ pkg }: { pkg: typeof FALLBACK_PACKAGES[0] }) {
   return (
-    <Card
-      className={
-        "glass relative overflow-hidden flex flex-col " +
-        (pkg.featured ? "border-primary/60 ring-1 ring-primary/30 shadow-elegant" : "")
-      }
-    >
-      {pkg.featured && (
-        <div className="absolute right-2 top-2">
-          <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+    <div className={`relative rounded-3xl overflow-hidden bg-gradient-to-br ${theme.from} ${theme.to} text-white shadow-xl group`}>
+      {pkg.is_featured && (
+        <div className="absolute top-3 right-3">
+          <span className="bg-white/20 backdrop-blur text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide uppercase border border-white/30">
+            Most Popular
+          </span>
         </div>
       )}
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-xl">{pkg.name}</CardTitle>
-          <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{pkg.tagline}</span>
-        </div>
-        <div className="mt-2 text-3xl font-extrabold">
-          {pkr(pkg.price)}{" "}
-          <span className="text-sm font-normal text-muted-foreground">one-time</span>
-        </div>
-        <p className="text-sm text-muted-foreground">{pkg.description}</p>
-      </CardHeader>
-      <CardContent className="space-y-4 flex-1 flex flex-col">
-        {/* Earnings table */}
-        <div className="rounded-xl border bg-primary/5 p-3">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2 text-center">Earnings Breakdown</div>
-          <div className="grid grid-cols-3 gap-1 text-center">
-            <EarnStat icon={TrendingUp} label="Daily" value={pkr(pkg.daily)} />
-            <EarnStat icon={CalendarDays} label="Weekly" value={pkr(pkg.weekly)} />
-            <EarnStat icon={Calendar} label="Monthly" value={pkr(pkg.monthly)} />
+
+      {/* Decorative circles */}
+      <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-xl" />
+      <div className="absolute -bottom-12 -left-8 h-40 w-40 rounded-full bg-black/20 blur-xl" />
+
+      <div className="relative p-5 sm:p-6 flex flex-col min-h-[200px]">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>
+              {pkg.tagline || "Earning Plan"}
+            </div>
+            <h3 className="text-xl font-extrabold">{pkg.name}</h3>
           </div>
+          {daily > 0 && (
+            <div className="shrink-0 text-right">
+              <div className={`text-xs ${theme.accent} font-medium`}>per day</div>
+              <div className="text-lg font-black">{pkr(daily)}</div>
+            </div>
+          )}
         </div>
 
-        <ul className="space-y-1.5 flex-1">
-          {pkg.features.map((f, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="pt-2 border-t text-xs text-muted-foreground text-center">
-          Pay via OPay or Mashreq Bank above, then contact admin to activate.
+        <div className="mt-4">
+          <div className="text-3xl font-black tracking-tight">
+            {pkr(price)}
+          </div>
+          <div className="text-xs opacity-70 font-medium">one-time package</div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-function EarnStat({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div>
-      <Icon className="h-3.5 w-3.5 mx-auto text-primary mb-0.5" />
-      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className="text-xs font-bold">{value}</div>
+        {/* Short snippet of description */}
+        {pkg.description && (
+          <p className="mt-2 text-sm opacity-80 line-clamp-2 leading-snug">{pkg.description}</p>
+        )}
+
+        <div className="mt-auto pt-4">
+          <PackageDetailDialog pkg={pkg} features={features} daily={daily} theme={theme} />
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ─── DB-driven package card ──────────────────────────────────────── */
-
-function PackageCard({ pkg }: { pkg: any }) {
-  const features: string[] = Array.isArray(pkg.features) ? pkg.features : [];
-  const daily = Number(pkg.daily_earning ?? 0);
+/* ── Detail popup ─────────────────────────────── */
+function PackageDetailDialog({
+  pkg, features, daily, theme,
+}: {
+  pkg: any; features: string[]; daily: number; theme: typeof CARD_THEMES[0];
+}) {
   const weekly = daily * 7;
   const monthly = daily * 30;
 
   return (
-    <Card
-      className={
-        "glass relative overflow-hidden flex flex-col " +
-        (pkg.is_featured ? "border-primary/60 ring-1 ring-primary/30 shadow-elegant" : "")
-      }
-    >
-      {pkg.is_featured && (
-        <div className="absolute right-2 top-2">
-          <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
-        </div>
-      )}
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-xl">{pkg.name}</CardTitle>
-          {pkg.tagline && (
-            <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{pkg.tagline}</span>
-          )}
-        </div>
-        <div className="mt-2 text-3xl font-extrabold">
-          {pkr(Number(pkg.price))}{" "}
-          <span className="text-sm font-normal text-muted-foreground">one-time</span>
-        </div>
-        {pkg.description && <p className="text-sm text-muted-foreground">{pkg.description}</p>}
-      </CardHeader>
-      <CardContent className="space-y-4 flex-1 flex flex-col">
-        {daily > 0 && (
-          <div className="rounded-xl border bg-primary/5 p-3">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2 text-center">Earnings Breakdown</div>
-            <div className="grid grid-cols-3 gap-1 text-center">
-              <EarnStat icon={TrendingUp} label="Daily" value={pkr(daily)} />
-              <EarnStat icon={CalendarDays} label="Weekly" value={pkr(weekly)} />
-              <EarnStat icon={Calendar} label="Monthly" value={pkr(monthly)} />
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur font-semibold gap-1.5 group-hover:bg-white/25 transition-all"
+          size="sm"
+        >
+          View Details & Buy <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-3xl overflow-hidden">
+        {/* Header gradient */}
+        <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} text-white p-6 pb-8`}>
+          <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10 blur-xl" />
+          <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-black/20 blur-xl" />
+          <div className="relative">
+            <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>
+              {pkg.tagline || "Earning Plan"}
+            </div>
+            <DialogTitle className="text-2xl font-black text-white">{pkg.name}</DialogTitle>
+            <div className="mt-3 flex items-end gap-4">
+              <div>
+                <div className="text-4xl font-black tracking-tight">{pkr(Number(pkg.price))}</div>
+                <div className="text-xs opacity-70">one-time joining fee</div>
+              </div>
+              {daily > 0 && (
+                <div className="ml-auto text-right">
+                  <div className={`text-xs ${theme.accent}`}>daily earning</div>
+                  <div className="text-2xl font-black">{pkr(daily)}</div>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
-        {features.length > 0 && (
-          <ul className="space-y-1.5 flex-1">
-            {features.map((f, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>{f}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="p-5 space-y-5">
+          {/* Earnings grid */}
+          {daily > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { icon: TrendingUp, label: "Daily", value: pkr(daily) },
+                { icon: CalendarDays, label: "Weekly", value: pkr(weekly) },
+                { icon: Calendar, label: "Monthly", value: pkr(monthly) },
+              ].map((e) => (
+                <div key={e.label} className="rounded-2xl bg-primary/5 border border-primary/10 p-3 text-center">
+                  <e.icon className="h-4 w-4 text-primary mx-auto mb-1" />
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{e.label}</div>
+                  <div className="text-sm font-black mt-0.5">{e.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        <BuyDialog pkg={pkg} />
-      </CardContent>
-    </Card>
+          {/* Description */}
+          {pkg.description && (
+            <div>
+              <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1.5">About this plan</div>
+              <p className="text-sm text-foreground/80 leading-relaxed">{pkg.description}</p>
+            </div>
+          )}
+
+          {/* Features list */}
+          {features.length > 0 && (
+            <div>
+              <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-2.5 flex items-center gap-1.5">
+                <Zap className="h-3 w-3 text-primary" /> What&apos;s included
+              </div>
+              <ul className="space-y-2">
+                {features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 grid place-items-center shrink-0 mt-0.5">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="leading-snug">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="border-t" />
+
+          {/* Buy section */}
+          <BuySection pkg={pkg} />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-/* ─── Buy dialog ────────────────────────────────────────────────── */
-
-function BuyDialog({ pkg }: { pkg: any }) {
+/* ── Buy section (inside popup) ─────────────── */
+function BuySection({ pkg }: { pkg: any }) {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [method, setMethod] = useState("opay");
   const [payerName, setPayerName] = useState("");
   const [payerPhone, setPayerPhone] = useState("");
@@ -413,8 +371,8 @@ function BuyDialog({ pkg }: { pkg: any }) {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const methodAccount = method === "opay" ? OPAY_NUMBER : MASHREQ_ACCOUNT;
-  const methodLabel = method === "opay" ? "OPay" : "Mashreq Bank";
+  const account = method === "opay" ? OPAY : MASHREQ;
+  const label = method === "opay" ? "OPay" : "Mashreq Bank";
 
   async function submit() {
     setBusy(true);
@@ -426,9 +384,7 @@ function BuyDialog({ pkg }: { pkg: any }) {
       if (file) {
         const ext = file.name.split(".").pop() || "jpg";
         const path = `${u.user.id}/purchases/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("proof-uploads")
-          .upload(path, file, { upsert: true });
+        const { error: upErr } = await supabase.storage.from("proof-uploads").upload(path, file, { upsert: true });
         if (upErr) throw upErr;
         const { data: pub } = supabase.storage.from("proof-uploads").getPublicUrl(path);
         screenshot_url = pub.publicUrl;
@@ -447,105 +403,238 @@ function BuyDialog({ pkg }: { pkg: any }) {
       });
       if (error) throw error;
 
-      toast.success("Purchase submitted — we'll review and activate shortly!");
-      setOpen(false);
-      setFile(null);
-      setPayerName(""); setPayerPhone(""); setNotes("");
+      toast.success("Request submitted! We'll activate your package shortly.");
+      setFile(null); setPayerName(""); setPayerPhone(""); setNotes("");
       qc.invalidateQueries({ queryKey: ["my-purchases"] });
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to submit");
+      toast.error(e.message ?? "Failed");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <div className="space-y-3">
+      <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-1.5">
+        <Upload className="h-3 w-3 text-primary" /> Submit Purchase
+      </div>
+
+      {/* Method picker */}
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { id: "opay", label: "OPay" },
+          { id: "mashreq", label: "Mashreq Bank" },
+        ].map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMethod(m.id)}
+            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all ${
+              method === m.id
+                ? "bg-primary text-primary-foreground border-primary shadow-md"
+                : "bg-card hover:bg-muted"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Account to pay */}
+      <div className="flex items-center justify-between rounded-xl bg-muted/60 border px-3 py-2.5 text-sm">
+        <span>
+          <span className="font-bold">{label}:</span>{" "}
+          <span className="font-mono">{account}</span>
+        </span>
+        <Button
+          size="sm" variant="ghost" className="h-7 px-1.5"
+          onClick={() => { navigator.clipboard.writeText(account); toast.success("Copied"); }}
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs">Your Name</Label>
+          <Input className="mt-0.5 text-sm" value={payerName} onChange={(e) => setPayerName(e.target.value)} placeholder="Sender name" />
+        </div>
+        <div>
+          <Label className="text-xs">Phone</Label>
+          <Input className="mt-0.5 text-sm" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} placeholder="03XX-XXXXXXX" />
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs">Payment Screenshot <span className="text-muted-foreground">(attach proof)</span></Label>
+        <Input
+          type="file"
+          accept="image/*"
+          className="mt-0.5 text-sm"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+        {file && <p className="text-xs text-emerald-600 mt-1">✓ {file.name}</p>}
+      </div>
+
+      <div>
+        <Label className="text-xs">Notes (optional)</Label>
+        <Textarea className="mt-0.5 text-sm" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Transaction ID or any notes…" />
+      </div>
+
+      <Button onClick={submit} disabled={busy} className="w-full" size="lg">
+        {busy ? "Submitting…" : `Submit Request — ${pkr(Number(pkg.price))}`}
+      </Button>
+      <p className="text-xs text-center text-muted-foreground">
+        We verify and activate within a few hours. You'll see status updates below.
+      </p>
+    </div>
+  );
+}
+
+/* ── Static fallback packages ─────────────────── */
+const FALLBACK = [
+  {
+    id: "f1", name: "Starter", tagline: "Video Watching", price: 799,
+    description: "Watch short YouTube videos daily and earn ₨80 per day. Simple, easy, and no experience needed.",
+    daily: 80, weekly: 560, monthly: 2400,
+    features: ["Watch 5–10 videos per day","Daily earning ₨80","Weekly earning ₨560","Monthly earning ₨2,400","Withdraw via OPay or Mashreq Bank","24/7 support"],
+    sort_order: 1, is_featured: false,
+  },
+  {
+    id: "f2", name: "Professional", tagline: "Assignment Writing", price: 1299,
+    description: "Write essays and college assignments submitted by clients worldwide. Earn ₨250 every day.",
+    daily: 250, weekly: 1750, monthly: 7500,
+    features: ["Essay & assignment writing","College / university tasks","Daily earning ₨250","Weekly earning ₨1,750","Monthly earning ₨7,500","Priority task assignment","Withdraw via OPay or Mashreq Bank"],
+    sort_order: 2, is_featured: true,
+  },
+  {
+    id: "f3", name: "Premium", tagline: "Video + Data Entry", price: 4500,
+    description: "Combine video watching and data entry for maximum daily income. Best ROI on the platform.",
+    daily: 400, weekly: 2800, monthly: 12000,
+    features: ["Video watching tasks","Data entry tasks","Daily earning ₨400","Weekly earning ₨2,800","Monthly earning ₨12,000","Highest task priority","All withdrawal methods","VIP support"],
+    sort_order: 3, is_featured: false,
+  },
+];
+
+function FallbackGrid() {
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {FALLBACK.map((p) => {
+        const theme = CARD_THEMES[(p.sort_order - 1) % CARD_THEMES.length];
+        return (
+          <div key={p.id} className={`relative rounded-3xl overflow-hidden bg-gradient-to-br ${theme.from} ${theme.to} text-white shadow-xl group`}>
+            {p.is_featured && (
+              <div className="absolute top-3 right-3">
+                <span className="bg-white/20 backdrop-blur text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide uppercase border border-white/30">Most Popular</span>
+              </div>
+            )}
+            <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-xl" />
+            <div className="absolute -bottom-12 -left-8 h-40 w-40 rounded-full bg-black/20 blur-xl" />
+            <div className="relative p-5 sm:p-6 flex flex-col min-h-[200px]">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>{p.tagline}</div>
+                  <h3 className="text-xl font-extrabold">{p.name}</h3>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className={`text-xs ${theme.accent}`}>per day</div>
+                  <div className="text-lg font-black">{pkr(p.daily)}</div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="text-3xl font-black tracking-tight">{pkr(p.price)}</div>
+                <div className="text-xs opacity-70">one-time package</div>
+              </div>
+              <p className="mt-2 text-sm opacity-80 line-clamp-2 leading-snug">{p.description}</p>
+              <div className="mt-auto pt-4">
+                <FallbackDetailDialog pkg={p} theme={theme} />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FallbackDetailDialog({ pkg, theme }: { pkg: typeof FALLBACK[0]; theme: typeof CARD_THEMES[0] }) {
+  const weekly = pkg.daily * 7;
+  const monthly = pkg.daily * 30;
+
+  return (
+    <Dialog>
       <DialogTrigger asChild>
-        <Button className="w-full mt-auto" size="lg">
-          Buy Now — {pkr(Number(pkg.price))}
+        <Button className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur font-semibold gap-1.5" size="sm">
+          View Details & Buy <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Buy {pkg.name} Package</DialogTitle>
-          <DialogDescription>
-            Send {pkr(Number(pkg.price))} to one of the accounts below, then fill in your details and upload the screenshot.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-3xl overflow-hidden">
+        <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} text-white p-6 pb-8`}>
+          <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10 blur-xl" />
+          <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-black/20 blur-xl" />
+          <div className="relative">
+            <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>{pkg.tagline}</div>
+            <DialogTitle className="text-2xl font-black text-white">{pkg.name}</DialogTitle>
+            <DialogDescription className="sr-only">Package details and purchase form</DialogDescription>
+            <div className="mt-3 flex items-end gap-4">
+              <div>
+                <div className="text-4xl font-black tracking-tight">{pkr(pkg.price)}</div>
+                <div className="text-xs opacity-70">one-time joining fee</div>
+              </div>
+              <div className="ml-auto text-right">
+                <div className={`text-xs ${theme.accent}`}>daily earning</div>
+                <div className="text-2xl font-black">{pkr(pkg.daily)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <div className="space-y-3">
-          {/* Method picker */}
+        <div className="p-5 space-y-5">
+          {/* Earnings */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { icon: TrendingUp, label: "Daily", value: pkr(pkg.daily) },
+              { icon: CalendarDays, label: "Weekly", value: pkr(weekly) },
+              { icon: Calendar, label: "Monthly", value: pkr(monthly) },
+            ].map((e) => (
+              <div key={e.label} className="rounded-2xl bg-primary/5 border border-primary/10 p-3 text-center">
+                <e.icon className="h-4 w-4 text-primary mx-auto mb-1" />
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{e.label}</div>
+                <div className="text-sm font-black mt-0.5">{e.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Description */}
           <div>
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Payment Method</Label>
-            <div className="grid grid-cols-2 gap-2 mt-1.5">
-              {[
-                { id: "opay", label: "OPay" },
-                { id: "mashreq", label: "Mashreq Bank" },
-              ].map((m) => (
-                <Button
-                  key={m.id}
-                  type="button"
-                  variant={method === m.id ? "default" : "outline"}
-                  onClick={() => setMethod(m.id)}
-                  size="sm"
-                >
-                  {m.label}
-                </Button>
+            <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1.5">About this plan</div>
+            <p className="text-sm leading-relaxed text-foreground/80">{pkg.description}</p>
+          </div>
+
+          {/* Features */}
+          <div>
+            <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-2.5 flex items-center gap-1.5">
+              <Zap className="h-3 w-3 text-primary" /> What's included
+            </div>
+            <ul className="space-y-2">
+              {pkg.features.map((f, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm">
+                  <div className="h-5 w-5 rounded-full bg-primary/10 grid place-items-center shrink-0 mt-0.5">
+                    <Check className="h-3 w-3 text-primary" />
+                  </div>
+                  <span className="leading-snug">{f}</span>
+                </li>
               ))}
-            </div>
-            <div className="mt-2 rounded-lg bg-muted/60 border px-3 py-2 text-xs font-mono flex items-center justify-between">
-              <span>
-                <span className="font-semibold text-foreground">{methodLabel}:</span>{" "}
-                {methodAccount}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-1.5"
-                onClick={() => { navigator.clipboard.writeText(methodAccount); toast.success("Copied"); }}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
+            </ul>
           </div>
 
-          <div>
-            <Label>Your Full Name</Label>
-            <Input value={payerName} onChange={(e) => setPayerName(e.target.value)} placeholder="Sender name" />
-          </div>
-          <div>
-            <Label>Your Phone Number</Label>
-            <Input value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} placeholder="03XX-XXXXXXX" />
-          </div>
-          <div>
-            <Label>Payment Screenshot (required)</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              />
-              <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
-            </div>
-            {file && <p className="text-xs text-emerald-600 mt-1">✓ {file.name}</p>}
-          </div>
-          <div>
-            <Label>Notes (optional)</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              placeholder="Any additional info…"
-            />
-          </div>
+          <div className="border-t" />
 
-          <Button onClick={submit} disabled={busy} className="w-full" size="lg">
-            {busy ? "Submitting…" : "Submit Purchase Request"}
-          </Button>
-          <p className="text-xs text-center text-muted-foreground">
-            Our team verifies and activates within a few hours.
-          </p>
+          {/* Static buy note */}
+          <div className="rounded-xl bg-muted/50 border p-4 text-sm text-muted-foreground text-center leading-relaxed">
+            <div className="font-semibold text-foreground mb-1">How to buy</div>
+            Send <strong>{pkr(pkg.price)}</strong> to OPay <strong>{OPAY}</strong> or Mashreq Bank <strong>{MASHREQ}</strong> and contact admin with your screenshot to activate.
+          </div>
         </div>
       </DialogContent>
     </Dialog>

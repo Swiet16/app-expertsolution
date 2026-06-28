@@ -89,7 +89,7 @@ function Index() {
           </h1>
 
           <p className="mt-5 text-base sm:text-lg opacity-85 max-w-2xl mx-auto sm:mx-0">
-            Pakistan's trusted online earning platform. Watch videos, complete assignments, and do data entry — earn ₨80 to ₨400 per day, withdraw via JazzCash, Easypaisa, OPay, or bank.
+            Pakistan's trusted online earning platform. Watch videos, complete assignments, and do data entry — earn ₨80 to ₨400 per day, withdraw via OPay or Mashreq Bank.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3 items-center sm:items-start">
