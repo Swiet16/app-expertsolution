@@ -208,7 +208,7 @@ export function HelpCenter({
 
       {/* ── Overlay ────────────────────────────────────────── */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end sm:justify-end p-0 sm:p-4">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-end sm:justify-end p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className={cn(
             "relative w-full sm:w-[400px] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl",
