@@ -27,6 +27,8 @@ export function FineAlertSection() {
         .order("created_at", { ascending: false });
       return data ?? [];
     },
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
   if (isLoading) return null;
