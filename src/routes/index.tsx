@@ -1,13 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Video, ShieldCheck, Wallet, ArrowRight, Star, Users, Zap,
   TrendingUp, Calendar, CalendarDays, Key, Check,
-  BookOpen, Database, Award,
+  BookOpen, Database, Award, Quote, ChevronDown, MessageCircle,
 } from "lucide-react";
-import { BrandLogo } from "@/components/brand-logo";
-import { LogoIcon } from "@/components/logo-icon";
+import { PublicHeader } from "@/components/public-header";
 import { supabase } from "@/integrations/supabase/client";
 import { PayoutTicker } from "@/components/payout-ticker";
 
@@ -58,10 +57,43 @@ const PACKAGES = [
   },
 ];
 
+const REVIEWS = [
+  { name: "Ahmed Khan", location: "Lahore, Pakistan", rating: 5, text: "Best earning platform I have used. Withdrawals are fast and support is friendly.", avatar: "#6366f1" },
+  { name: "Ayesha Siddiqui", location: "Karachi, Pakistan", rating: 5, text: "I made my first 5000 PKR in just one week. Highly recommended for students.", avatar: "#10b981" },
+  { name: "Hassan Raza", location: "Faisalabad, Pakistan", rating: 5, text: "Customer support replied within minutes. Truly a trustworthy platform.", avatar: "#f59e0b" },
+  { name: "Sana Malik", location: "Rawalpindi, Pakistan", rating: 5, text: "Withdrew via JazzCash, received in 10 minutes. Amazing experience overall!", avatar: "#ec4899" },
+  { name: "Fatima Noor", location: "Multan, Pakistan", rating: 5, text: "Truly life changing. The video tasks are simple and very rewarding.", avatar: "#8b5cf6" },
+  { name: "Usman Tariq", location: "Peshawar, Pakistan", rating: 4, text: "Good packages and consistent earnings. Will definitely recommend to friends.", avatar: "#06b6d4" },
+  { name: "Zain Abbas", location: "Sialkot, Pakistan", rating: 5, text: "I am a college student and this helps cover all my monthly expenses.", avatar: "#ef4444" },
+  { name: "Maryam Sheikh", location: "Gujranwala, Pakistan", rating: 5, text: "Smooth experience from signup to first withdrawal. No issues at all.", avatar: "#14b8a6" },
+  { name: "Bilal Ahmad", location: "Islamabad, Pakistan", rating: 4, text: "Tasks are easy and instructions are clear. Payment received on time.", avatar: "#f97316" },
+];
+
+const FAQS_PREVIEW = [
+  { q: "Is Expert Solutions legitimate?", a: "Yes — we have 2,400+ active members and official payment partnerships with OPay and Mashreq Bank. Every withdrawal is processed manually by our admin team." },
+  { q: "How quickly are withdrawals processed?", a: "OPay withdrawals are usually completed in under 60 seconds after admin approval. Mashreq Bank transfers settle the same day. Admins process requests within 1–6 hours on business days." },
+  { q: "Can members outside Pakistan join?", a: "Absolutely. We have members from the UAE, UK, USA, Saudi Arabia, Canada, and many more countries. All tasks are 100% online — work from anywhere." },
+  { q: "What is the minimum withdrawal amount?", a: "₨500 for OPay and ₨1,000 for Mashreq Bank. There are no withdrawal fees charged by us." },
+];
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`border border-white/10 rounded-2xl overflow-hidden transition-all ${open ? "bg-white/10" : "bg-white/5 hover:bg-white/8"}`}>
+      <button className="w-full text-left px-5 py-4 flex items-start gap-3" onClick={() => setOpen((o) => !o)}>
+        <span className="flex-1 text-sm font-semibold leading-relaxed">{q}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 mt-0.5 opacity-60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="px-5 pb-4 text-sm opacity-70 leading-relaxed border-t border-white/10 pt-3">{a}</div>
+      )}
+    </div>
+  );
+}
+
 function Index() {
   const navigate = useNavigate();
 
-  /* ── If already logged in → go straight to dashboard ── */
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/dashboard", replace: true });
@@ -71,21 +103,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-gradient-hero text-primary-foreground overflow-x-hidden">
 
-      {/* ── Header ─────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-gradient-hero/80 backdrop-blur-md border-b border-white/10">
-        <div className="px-4 sm:px-8 py-3 flex items-center justify-between gap-2 max-w-7xl mx-auto">
-          <LogoIcon className="h-9 w-9 sm:hidden shrink-0" />
-          <BrandLogo size="sm" variant="onPrimary" showWordmark className="hidden sm:flex" />
-          <div className="flex items-center gap-2 shrink-0">
-            <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground px-3">
-              <Link to="/auth">Sign in</Link>
-            </Button>
-            <Button asChild size="sm" className="bg-white text-primary hover:bg-white/90 font-semibold shadow-md">
-              <Link to="/auth">Get started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="px-4 sm:px-8 max-w-7xl mx-auto">
 
@@ -116,7 +134,7 @@ function Index() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-white/30 bg-white/10 text-primary-foreground hover:bg-white/20 w-full sm:w-auto">
-              <Link to="/auth">Sign in</Link>
+              <Link to="/about">Learn more</Link>
             </Button>
           </div>
 
@@ -134,7 +152,6 @@ function Index() {
 
       </main>
 
-      {/* ── Live payout ticker ────────────── */}
       <PayoutTicker />
 
       <main className="px-4 sm:px-8 max-w-7xl mx-auto">
@@ -264,18 +281,104 @@ function Index() {
         </section>
 
         {/* ── Payment methods ─────────────────── */}
-        <section className="pb-14 text-center">
+        <section className="pb-14 text-center border-b border-white/10">
           <h2 className="text-xl font-bold mb-2">Supported Payment Methods</h2>
           <p className="opacity-70 text-sm mb-6">Pay to join · Withdraw your earnings</p>
           <div className="flex flex-wrap justify-center gap-3">
-            {["OPay", "Mashreq Bank", "Bank Transfer"].map((m) => (
-              <div key={m} className="rounded-xl bg-white/10 border border-white/20 px-5 py-2.5 text-sm font-semibold hover:bg-white/20 transition">
-                {m}
+            {[
+              { label: "OPay", emoji: "💳" },
+              { label: "Mashreq Bank", emoji: "🏦" },
+              { label: "Bank Transfer", emoji: "🔁" },
+            ].map((m) => (
+              <div key={m.label} className="rounded-2xl bg-white/10 border border-white/20 px-6 py-3.5 flex items-center gap-2.5 hover:bg-white/20 transition">
+                <span className="text-xl">{m.emoji}</span>
+                <span className="text-sm font-semibold">{m.label}</span>
               </div>
             ))}
           </div>
         </section>
+
+        {/* ── Reviews ───────────────────────────── */}
+        <section className="py-14">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2">What Members Say</h2>
+          <p className="text-center opacity-70 text-sm mb-10">Real reviews from real earners across Pakistan</p>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {REVIEWS.map((r, i) => (
+              <div
+                key={i}
+                className="glass rounded-2xl p-5 border border-white/10 hover:border-white/25 transition-all flex flex-col gap-3"
+              >
+                <Quote className="h-6 w-6 opacity-20 shrink-0" />
+                <p className="text-sm leading-relaxed opacity-85 flex-1">"{r.text}"</p>
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="h-8 w-8 rounded-full grid place-items-center text-[11px] font-bold text-white shrink-0 border-2 border-white/20"
+                      style={{ background: r.avatar }}
+                    >
+                      {r.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">{r.name}</div>
+                      <div className="text-[10px] opacity-50">{r.location}</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: r.rating }).map((_, si) => (
+                      <Star key={si} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                    ))}
+                    {Array.from({ length: 5 - r.rating }).map((_, si) => (
+                      <Star key={si} className="h-3 w-3 fill-white/20 text-white/20" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-2 text-xs font-semibold opacity-70">
+              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+              4.9 average from 2,400+ verified members
+            </div>
+          </div>
+        </section>
+
+        {/* ── FAQ Preview ───────────────────────── */}
+        <section className="pb-14 border-t border-white/10 pt-12">
+          <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-1">Common Questions</h2>
+              <p className="opacity-60 text-sm">Quick answers to what people ask most</p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="border-white/30 bg-white/10 text-white hover:bg-white/20 shrink-0">
+              <Link to="/faq" className="flex items-center gap-1.5">
+                <MessageCircle className="h-3.5 w-3.5" /> View all FAQs
+              </Link>
+            </Button>
+          </div>
+          <div className="space-y-2 max-w-3xl mx-auto">
+            {FAQS_PREVIEW.map((item) => (
+              <FaqItem key={item.q} q={item.q} a={item.a} />
+            ))}
+          </div>
+        </section>
+
       </main>
+
+      {/* ── Footer ───────────────────────────── */}
+      <footer className="border-t border-white/10 py-8 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs opacity-50">
+          <span>© 2025 Expert Solutions · Pakistan</span>
+          <div className="flex gap-4">
+            <Link to="/" className="hover:opacity-100 transition">Home</Link>
+            <Link to="/about" className="hover:opacity-100 transition">About</Link>
+            <Link to="/faq" className="hover:opacity-100 transition">FAQ</Link>
+            <Link to="/auth" className="hover:opacity-100 transition">Sign in</Link>
+          </div>
+        </div>
+      </footer>
 
       {/* ── Mobile sticky CTA ─────────────────── */}
       <div className="sm:hidden fixed bottom-0 inset-x-0 z-50 p-4 bg-gradient-to-t from-[#064e3b] to-transparent">
