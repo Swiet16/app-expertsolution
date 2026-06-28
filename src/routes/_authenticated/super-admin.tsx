@@ -194,12 +194,26 @@ function KeyRow({ keyRow, packages, onRefresh }: { keyRow: any; packages: any[];
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [ipBlocked, setIpBlocked] = useState(false);
+  const [noSender, setNoSender] = useState(false);
+  const [sentFrom, setSentFrom] = useState("");
 
   const pkgName = keyRow.packages?.name ?? packages.find((p: any) => p.id === keyRow.package_id)?.name ?? "Package";
+
+  const { data: senderInfo } = useQuery({
+    queryKey: ["brevo-sender"],
+    queryFn: async () => {
+      const res = await fetch("/api/brevo-senders");
+      const d = await res.json();
+      return res.ok ? d : null;
+    },
+    staleTime: 60_000,
+  });
 
   async function sendEmail() {
     if (!email.trim()) return toast.error("Enter recipient email");
     setSending(true);
+    setIpBlocked(false);
+    setNoSender(false);
     try {
       const res = await fetch("/api/send-activation-email", {
         method: "POST",
@@ -213,15 +227,16 @@ function KeyRow({ keyRow, packages, onRefresh }: { keyRow: any; packages: any[];
       });
       const data = await res.json();
       if (res.status === 403 && data.error === "IP_NOT_AUTHORIZED") {
-        toast.error("Brevo IP not authorized", {
-          description: "Click the link below to authorize this server's IP in Brevo.",
-          duration: 8000,
-        });
         setIpBlocked(true);
         return;
       }
+      if (res.status === 422 && data.error === "NO_VERIFIED_SENDER") {
+        setNoSender(true);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Failed to send");
-      toast.success("Email sent! ✉️", { description: `Activation key delivered to ${email}` });
+      setSentFrom(data.sentFrom || "");
+      toast.success("Email sent! ✉️", { description: `Key delivered to ${email}` });
       setSent(true);
       setSendOpen(false);
       onRefresh();
@@ -282,6 +297,39 @@ function KeyRow({ keyRow, packages, onRefresh }: { keyRow: any; packages: any[];
                     <div className="font-mono text-lg font-black tracking-widest">{keyRow.key}</div>
                     <div className="text-xs text-muted-foreground mt-1">{pkgName}</div>
                   </div>
+
+                  {/* Sender info pill — shows which verified email will send */}
+                  {senderInfo?.sender && !ipBlocked && !noSender && (
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs">
+                      <span className="text-emerald-500">✓</span>
+                      <span className="text-muted-foreground">Sending from:</span>
+                      <span className="font-mono font-semibold text-foreground truncate">{senderInfo.sender.email}</span>
+                    </div>
+                  )}
+
+                  {/* No verified sender error */}
+                  {noSender && (
+                    <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="text-rose-500 text-base leading-none mt-0.5">✗</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">No verified sender email</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Brevo requires a verified sender address. Add and verify one in your Brevo account.
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="https://app.brevo.com/senders"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-center gap-2 w-full rounded-lg bg-rose-500 hover:bg-rose-400 text-white text-xs font-bold py-2.5 transition-colors"
+                      >
+                        📧 Open Brevo → Add Verified Sender
+                      </a>
+                      <p className="text-[11px] text-center text-muted-foreground">After verifying, reload and try again.</p>
+                    </div>
+                  )}
 
                   {/* IP blocked warning banner */}
                   {ipBlocked && (
