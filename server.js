@@ -115,7 +115,16 @@ async function start() {
       const result = await response.json();
       if (!response.ok) {
         console.error("Brevo error:", result);
-        return res.status(500).json({ error: result.message || "Email send failed" });
+        const msg = result.message || "";
+        const isIpBlock = msg.toLowerCase().includes("unrecogni") || msg.toLowerCase().includes("ip address") || response.status === 401;
+        if (isIpBlock) {
+          return res.status(403).json({
+            error: "IP_NOT_AUTHORIZED",
+            message: "Brevo has blocked this server's IP address. You need to authorize it in your Brevo account.",
+            authorizeUrl: "https://app.brevo.com/security/authorised_ips",
+          });
+        }
+        return res.status(500).json({ error: msg || "Email send failed" });
       }
       res.json({ success: true, messageId: result.messageId });
     } catch (err) {

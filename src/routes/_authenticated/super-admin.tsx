@@ -193,6 +193,7 @@ function KeyRow({ keyRow, packages, onRefresh }: { keyRow: any; packages: any[];
   const [name, setName] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [ipBlocked, setIpBlocked] = useState(false);
 
   const pkgName = keyRow.packages?.name ?? packages.find((p: any) => p.id === keyRow.package_id)?.name ?? "Package";
 
@@ -211,6 +212,14 @@ function KeyRow({ keyRow, packages, onRefresh }: { keyRow: any; packages: any[];
         }),
       });
       const data = await res.json();
+      if (res.status === 403 && data.error === "IP_NOT_AUTHORIZED") {
+        toast.error("Brevo IP not authorized", {
+          description: "Click the link below to authorize this server's IP in Brevo.",
+          duration: 8000,
+        });
+        setIpBlocked(true);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Failed to send");
       toast.success("Email sent! ✉️", { description: `Activation key delivered to ${email}` });
       setSent(true);
@@ -273,6 +282,32 @@ function KeyRow({ keyRow, packages, onRefresh }: { keyRow: any; packages: any[];
                     <div className="font-mono text-lg font-black tracking-widest">{keyRow.key}</div>
                     <div className="text-xs text-muted-foreground mt-1">{pkgName}</div>
                   </div>
+
+                  {/* IP blocked warning banner */}
+                  {ipBlocked && (
+                    <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-500 text-base leading-none mt-0.5">⚠️</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Brevo IP not authorized</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Brevo is blocking this server's IP address. You must authorize it once in your Brevo security settings.
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="https://app.brevo.com/security/authorised_ips"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-center gap-2 w-full rounded-lg bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold py-2.5 transition-colors"
+                      >
+                        <span>🔓</span> Open Brevo → Authorize IP
+                      </a>
+                      <p className="text-[11px] text-center text-muted-foreground">
+                        After authorizing, come back and click Send Email again.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     <div>
