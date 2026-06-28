@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, ListTodo, Video, Wallet, TrendingUp,
   User, Bell, Star, Shield, Crown, LogOut, Package,
-  MoreHorizontal, ChevronRight,
+  MoreHorizontal, ChevronRight, ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -44,6 +44,10 @@ const MORE_NAV = [
   { to: "/notifications", label: "Notifications", icon: Bell },
 ] as const;
 
+function pkr(val: number) {
+  return `₨${val.toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -66,6 +70,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     refetchInterval: 60000,
   });
   const isBanned = !!(banStatus && (banStatus.is_banned || banStatus.banned));
+
+  const { data: strikes } = useQuery({
+    queryKey: ["my-strikes"],
+    enabled: authReady,
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return [];
+      const { data } = await supabase
+        .from("strikes")
+        .select("*")
+        .eq("user_id", u.user.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const activeStrikeCount = (strikes ?? []).filter((s: any) => s.is_active !== false).length;
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   useEffect(() => setMoreOpen(false), [pathname]);
@@ -90,13 +111,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* ── Mobile top header ─────────────────────────────────── */}
+      {/* ── Mobile top header ─────────────────────────────── */}
       <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between gap-2 px-4 h-14 border-b bg-background/90 backdrop-blur-md">
         <Link to="/dashboard" aria-label="Home">
           <BrandLogo size="sm" showWordmark />
         </Link>
         <div className="flex items-center gap-2">
           <PushNotifications userId={ctx?.userId} />
+          {activeStrikeCount > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-destructive/10 border border-destructive/20 px-2 py-0.5 text-destructive text-xs font-bold">
+              <ShieldAlert className="h-3 w-3" /> {activeStrikeCount}
+            </div>
+          )}
           <Link to="/profile" aria-label="Profile">
             <Avatar className="h-8 w-8 ring-2 ring-primary/20">
               <AvatarImage src={ctx?.profile?.avatar_url ?? undefined} />
@@ -108,10 +134,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* ── Desktop layout ────────────────────────────────────── */}
+      {/* ── Desktop layout ──────────────────────────────── */}
       <div className="flex flex-1 min-h-0">
         <aside className="hidden lg:flex sticky top-0 h-screen w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex-col">
-          <DesktopSidebar ctx={ctx} onSignOut={signOut} pathname={pathname} />
+          <DesktopSidebar ctx={ctx} onSignOut={signOut} pathname={pathname} strikeCount={activeStrikeCount} />
         </aside>
 
         <main className="flex-1 min-w-0 pb-24 lg:pb-0">
@@ -124,7 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {/* ── Mobile bottom navigation bar ──────────────────────── */}
+      {/* ── Mobile bottom nav ──────────────────────────── */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 safe-area-bottom">
         <div className="relative bg-background/95 backdrop-blur-xl border-t border-border/60 shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
           <div className="flex items-stretch h-16">
@@ -137,18 +163,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={item.to}
                   className="flex-1 flex flex-col items-center justify-center gap-1 relative group"
                 >
-                  <div
-                    className={cn(
-                      "flex flex-col items-center justify-center gap-1 w-full h-full transition-all duration-200",
-                    )}
-                  >
+                  <div className="flex flex-col items-center justify-center gap-1 w-full h-full transition-all duration-200">
                     {active && (
                       <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-b-full bg-primary" />
                     )}
                     <div
                       className={cn(
                         "flex items-center justify-center h-8 w-8 rounded-xl transition-all duration-200",
-                        active ? "bg-primary text-primary-foreground shadow-md shadow-primary/30" : "text-muted-foreground group-active:scale-95",
+                        active
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                          : "text-muted-foreground group-active:scale-95",
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -190,8 +214,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate">{ctx?.profile?.full_name ?? "Member"}</div>
                     <div className="text-xs text-muted-foreground">
-                      ${Number(ctx?.wallet?.available_balance ?? 0).toFixed(2)} available
+                      {pkr(Number(ctx?.wallet?.available_balance ?? 0))} available
                     </div>
+                    {activeStrikeCount > 0 && (
+                      <div className="text-xs text-destructive flex items-center gap-1 mt-0.5">
+                        <ShieldAlert className="h-3 w-3" /> {activeStrikeCount} active strike{activeStrikeCount > 1 ? "s" : ""}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -249,7 +278,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </SheetContent>
             </Sheet>
           </div>
-          {/* iOS safe area */}
           <div className="h-[env(safe-area-inset-bottom)] bg-background" />
         </div>
       </nav>
@@ -304,10 +332,12 @@ function DesktopSidebar({
   ctx,
   onSignOut,
   pathname,
+  strikeCount,
 }: {
   ctx: Awaited<ReturnType<typeof getCurrentUserContext>> | undefined;
   onSignOut: () => void;
   pathname: string;
+  strikeCount: number;
 }) {
   return (
     <div className="flex flex-col w-full h-full">
@@ -365,8 +395,13 @@ function DesktopSidebar({
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium truncate">{ctx?.profile?.full_name ?? "Member"}</div>
             <div className="text-xs text-muted-foreground truncate">
-              ${Number(ctx?.wallet?.available_balance ?? 0).toFixed(2)} available
+              {pkr(Number(ctx?.wallet?.available_balance ?? 0))} available
             </div>
+            {strikeCount > 0 && (
+              <div className="text-[10px] text-destructive flex items-center gap-0.5">
+                <ShieldAlert className="h-2.5 w-2.5" /> {strikeCount} strike{strikeCount > 1 ? "s" : ""}
+              </div>
+            )}
           </div>
         </div>
         <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={onSignOut}>
