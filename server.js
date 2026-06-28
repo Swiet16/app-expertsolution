@@ -1,3 +1,4 @@
+import http from "http";
 import express from "express";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
@@ -240,8 +241,13 @@ async function start() {
     }
   });
 
+  const server = http.createServer(app);
+
   if (isDev) {
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+    const vite = await createViteServer({
+      server: { middlewareMode: true, hmr: { server } },
+      appType: "spa",
+    });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(__dirname, "dist");
@@ -249,7 +255,7 @@ async function start() {
     app.get("*", (_req, res) => res.sendFile(path.join(distPath, "index.html")));
   }
 
-  app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
+  server.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
 }
 
 start().catch((err) => { console.error("Failed to start:", err); process.exit(1); });
