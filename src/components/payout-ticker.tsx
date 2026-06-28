@@ -35,17 +35,18 @@ function maskName(name: string) {
   return `${first} ${last[0]}.`;
 }
 
-function maskAccount(method: string) {
-  if (method === "OPay") {
-    const suffix = String(Math.floor(1000 + Math.random() * 9000));
-    return `0337****${suffix.slice(-3)}`;
-  }
-  return `08912****${String(Math.floor(10 + Math.random() * 89))}`;
-}
-
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
+}
+
+function maskAccount(method: string, seed: number) {
+  if (method === "OPay") {
+    const suffix = String(Math.floor(100 + seededRandom(seed + 99) * 900));
+    return `0337****${suffix}`;
+  }
+  const suffix = String(Math.floor(10 + seededRandom(seed + 77) * 89));
+  return `08912****${suffix}`;
 }
 
 function generatePayouts(count = 80) {
@@ -55,19 +56,30 @@ function generatePayouts(count = 80) {
     const amount = AMOUNTS[Math.floor(r(2) * AMOUNTS.length)];
     const method = METHODS[Math.floor(r(3) * METHODS.length)];
     const time = TIMES[Math.floor(r(4) * TIMES.length)];
-    return { name: maskName(name), account: maskAccount(method), amount, method, time };
+    return { name: maskName(name), account: maskAccount(method, i * 17 + 5), amount, method, time };
   });
 }
 
 const PAYOUTS = generatePayouts(80);
 
+const TICKER_DURATION_MS = 90_000;
+
 /* ── Horizontal marquee ticker ─────────────────── */
 export function PayoutTicker() {
   const doubled = [...PAYOUTS, ...PAYOUTS];
 
+  // Negative delay syncs the animation to real wall-clock time so it never
+  // appears to restart on refresh — it always picks up exactly where it
+  // would be if it had been running continuously since the Unix epoch.
+  const offsetMs = Date.now() % TICKER_DURATION_MS;
+  const animationDelay = `-${offsetMs}ms`;
+
   return (
     <div className="w-full overflow-hidden bg-white/8 backdrop-blur border-y border-white/10 py-2.5">
-      <div className="flex gap-0 animate-ticker whitespace-nowrap">
+      <div
+        className="flex gap-0 animate-ticker whitespace-nowrap"
+        style={{ animationDelay }}
+      >
         {doubled.map((p, i) => (
           <span
             key={i}
