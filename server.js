@@ -23,16 +23,17 @@ async function brevoRequest(path, method = "GET", body = null) {
 
 async function getVerifiedSender(apiKey) {
   if (!apiKey) return null;
-  // Try account info first — always has the account email which is verified
-  const { ok, data } = await brevoRequest("/account");
-  if (ok && data?.email) {
-    return { name: data.companyName || data.firstName || "Expert Solutions", email: data.email };
+  // Always prefer the verified senders list — these are explicitly validated by Brevo
+  const { ok, data } = await brevoRequest("/senders");
+  if (ok && Array.isArray(data?.senders) && data.senders.length > 0) {
+    // Pick the first active/verified sender
+    const verified = data.senders.find((s) => s.active !== false) || data.senders[0];
+    return { name: verified.name || "Expert Solutions", email: verified.email };
   }
-  // Fall back to senders list
-  const { ok: ok2, data: data2 } = await brevoRequest("/senders");
-  if (ok2 && Array.isArray(data2?.senders) && data2.senders.length > 0) {
-    const active = data2.senders.find((s) => s.active !== false) || data2.senders[0];
-    return { name: active.name || "Expert Solutions", email: active.email };
+  // Last resort: account email (may not be a verified sender, but try anyway)
+  const { ok: ok2, data: data2 } = await brevoRequest("/account");
+  if (ok2 && data2?.email) {
+    return { name: data2.companyName || data2.firstName || "Expert Solutions", email: data2.email };
   }
   return null;
 }
