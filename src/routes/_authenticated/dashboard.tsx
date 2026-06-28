@@ -10,6 +10,7 @@ import {
   ArrowRight, Star, AlertTriangle, ShieldAlert, Gavel,
 } from "lucide-react";
 import { FineAlertSection } from "@/components/fine-alert-section";
+import { PayoutFloatingNotification } from "@/components/payout-ticker";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -53,6 +54,8 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <PayoutFloatingNotification />
+
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Welcome back{data?.profile?.full_name ? `, ${data.profile.full_name.split(" ")[0]}` : ""}! 👋

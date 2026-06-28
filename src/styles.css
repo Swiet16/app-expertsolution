@@ -169,4 +169,12 @@
     -webkit-backdrop-filter: blur(12px) saturate(140%);
     border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
   }
+  .animate-ticker {
+    animation: ticker 90s linear infinite;
+  }
+}
+
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

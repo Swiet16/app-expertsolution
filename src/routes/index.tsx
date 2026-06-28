@@ -9,6 +9,7 @@ import {
 import { BrandLogo } from "@/components/brand-logo";
 import { LogoIcon } from "@/components/logo-icon";
 import { supabase } from "@/integrations/supabase/client";
+import { PayoutTicker } from "@/components/payout-ticker";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -130,6 +131,13 @@ function Index() {
             <span><strong>2,400+</strong> members earning daily across Pakistan</span>
           </div>
         </section>
+
+      </main>
+
+      {/* ── Live payout ticker ────────────── */}
+      <PayoutTicker />
+
+      <main className="px-4 sm:px-8 max-w-7xl mx-auto">
 
         {/* ── Stats ─────────────────────────── */}
         <section className="grid grid-cols-3 gap-3 pb-10 border-t border-white/10 pt-8">
