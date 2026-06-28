@@ -580,12 +580,23 @@ function SupportPanel() {
     queryFn: async () => {
       let q = supabase
         .from("support_chats")
-        .select("*, profiles(full_name, avatar_url)")
+        .select("*")
         .order("updated_at", { ascending: false });
       if (filter !== "all") q = q.eq("status", filter);
       const { data, error } = await q;
       if (error) throw error;
-      return data ?? [];
+      const rows = data ?? [];
+      if (rows.length === 0) return rows;
+
+      const userIds = [...new Set(rows.map((r: any) => r.user_id))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+      const profileMap: Record<string, any> = {};
+      for (const p of profilesData ?? []) profileMap[p.id] = p;
+
+      return rows.map((r: any) => ({ ...r, profiles: profileMap[r.user_id] ?? null }));
     },
     refetchInterval: 8000,
     retry: 1,
