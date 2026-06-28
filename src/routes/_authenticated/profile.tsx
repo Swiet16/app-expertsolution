@@ -15,6 +15,7 @@ import {
   Phone, User as UserIcon, Globe, CalendarClock,
   AlertTriangle, ArrowRight, ShieldAlert,
 } from "lucide-react";
+import { FineAlertSection } from "@/components/fine-alert-section";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — Expert Solutions" }] }),
@@ -135,6 +136,9 @@ function ProfilePage() {
           </Link>
         </div>
       )}
+
+      {/* Fine alerts */}
+      <FineAlertSection />
 
       {/* Strikes warning */}
       {activeStrikes.length > 0 && (

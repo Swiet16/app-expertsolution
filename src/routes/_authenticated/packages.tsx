@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  Check, Sparkles, Copy, Upload, Phone,
-  Key, TrendingUp, Calendar, CalendarDays,
+  Check, Sparkles, Copy, Upload,
+  Key, TrendingUp, Calendar, CalendarDays, Phone,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/packages")({
@@ -64,7 +64,7 @@ function PackagesPage() {
           <Sparkles className="h-6 w-6 text-primary" /> Packages
         </h1>
         <p className="text-muted-foreground mt-1">
-          Choose your earning plan, pay, and upload your payment screenshot to activate.
+          Choose your earning plan, pay via OPay or Mashreq Bank, then upload your screenshot.
         </p>
       </div>
 
@@ -121,7 +121,7 @@ function StatusBadge({ status }: { status: string }) {
 function PaymentInfo() {
   function copy(text: string) {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    toast.success("Copied!");
   }
   return (
     <Card className="glass border-primary/30">
@@ -130,14 +130,12 @@ function PaymentInfo() {
           <Phone className="h-4 w-4 text-primary" /> Payment Details
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Send your payment to one of the methods below, then upload the screenshot when buying a package.
+          Send payment to one of these accounts, then submit your package request with the screenshot as proof.
         </p>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         <PayRow label="OPay" value={OPAY_NUMBER} onCopy={() => copy(OPAY_NUMBER)} />
         <PayRow label="Mashreq Bank" value={MASHREQ_ACCOUNT} onCopy={() => copy(MASHREQ_ACCOUNT)} />
-        <PayRow label="JazzCash" value={OPAY_NUMBER} onCopy={() => copy(OPAY_NUMBER)} />
-        <PayRow label="Easypaisa" value={OPAY_NUMBER} onCopy={() => copy(OPAY_NUMBER)} />
       </CardContent>
     </Card>
   );
@@ -170,7 +168,7 @@ function RedeemKeyCard() {
       if (error || !(data as any)?.success) {
         toast.error((data as any)?.error ?? error?.message ?? "Invalid or already used key");
       } else {
-        toast.success("Key redeemed successfully! Your package is now active.");
+        toast.success("Key redeemed! Your package is now active.");
         setKey("");
         qc.invalidateQueries();
       }
@@ -188,7 +186,7 @@ function RedeemKeyCard() {
           <Key className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Have an Activation Key?
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          If you received an activation key from admin, enter it here to instantly unlock your package.
+          Received a key from admin? Enter it here to instantly unlock your package.
         </p>
       </CardHeader>
       <CardContent>
@@ -200,7 +198,11 @@ function RedeemKeyCard() {
             className="font-mono"
             onKeyDown={(e) => e.key === "Enter" && redeem()}
           />
-          <Button onClick={redeem} disabled={busy} className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button
+            onClick={redeem}
+            disabled={busy}
+            className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
             {busy ? "Redeeming…" : "Redeem"}
           </Button>
         </div>
@@ -209,46 +211,73 @@ function RedeemKeyCard() {
   );
 }
 
+/* ─── Static fallback (when DB has no packages) ─────────────────── */
+
+const FALLBACK_PACKAGES = [
+  {
+    name: "Starter",
+    price: 799,
+    tagline: "Video Watching",
+    description: "Perfect for beginners. Watch short videos daily and earn real PKR from day one.",
+    daily: 80, weekly: 560, monthly: 2400,
+    features: [
+      "Watch 5–10 videos per day",
+      "Daily earning ₨80",
+      "Weekly earning ₨560",
+      "Monthly earning ₨2,400",
+      "Withdraw via OPay or Mashreq Bank",
+      "24/7 customer support",
+    ],
+    featured: false,
+  },
+  {
+    name: "Professional",
+    price: 1299,
+    tagline: "Assignment Writing",
+    description: "Work on essay writing and college assignments. Ideal for students and skilled writers.",
+    daily: 250, weekly: 1750, monthly: 7500,
+    features: [
+      "Essay & assignment writing",
+      "College / university tasks",
+      "Daily earning ₨250",
+      "Weekly earning ₨1,750",
+      "Monthly earning ₨7,500",
+      "Priority task assignment",
+      "Withdraw via OPay or Mashreq Bank",
+    ],
+    featured: true,
+  },
+  {
+    name: "Premium",
+    price: 4500,
+    tagline: "Video + Data Entry",
+    description: "Top-tier plan combining video watching and data entry for maximum daily income.",
+    daily: 400, weekly: 2800, monthly: 12000,
+    features: [
+      "Video watching tasks",
+      "Data entry tasks",
+      "Daily earning ₨400",
+      "Weekly earning ₨2,800",
+      "Monthly earning ₨12,000",
+      "Highest task priority",
+      "VIP support",
+      "Bonus tasks available",
+    ],
+    featured: false,
+  },
+];
+
 function PackageFallback() {
-  const fallbacks = [
-    {
-      name: "Starter",
-      price: 799,
-      tagline: "Earn ₨80/day watching videos",
-      description: "Perfect for beginners. Watch short videos daily and earn real PKR from day one. Simple, easy, and reliable.",
-      daily: 80, weekly: 560, monthly: 2400,
-      features: ["Watch 5–10 videos per day", "Daily earning: ₨80", "Weekly earning: ₨560", "Monthly earning: ₨2,400", "Withdraw via JazzCash / Easypaisa / OPay", "24/7 customer support"],
-      featured: false,
-    },
-    {
-      name: "Professional",
-      price: 1299,
-      tagline: "Earn ₨250/day on assignments",
-      description: "Work on essay writing, college assignments, and academic tasks. Ideal for students and skilled writers.",
-      daily: 250, weekly: 1750, monthly: 7500,
-      features: ["Essay & assignment writing", "College / university tasks", "Daily earning: ₨250", "Weekly earning: ₨1,750", "Monthly earning: ₨7,500", "Priority task assignment", "Withdraw via JazzCash / Bank"],
-      featured: true,
-    },
-    {
-      name: "Premium",
-      price: 4500,
-      tagline: "Earn ₨400/day — max income",
-      description: "Top-tier package combining video watching and data entry for maximum daily income. Best ROI on the platform.",
-      daily: 400, weekly: 2800, monthly: 12000,
-      features: ["Video watching tasks", "Data entry tasks", "Daily earning: ₨400", "Weekly earning: ₨2,800", "Monthly earning: ₨12,000", "Highest task priority", "All withdrawal methods", "VIP support"],
-      featured: false,
-    },
-  ];
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {fallbacks.map((p) => (
+      {FALLBACK_PACKAGES.map((p) => (
         <StaticPackageCard key={p.name} pkg={p} />
       ))}
     </div>
   );
 }
 
-function StaticPackageCard({ pkg }: { pkg: any }) {
+function StaticPackageCard({ pkg }: { pkg: typeof FALLBACK_PACKAGES[0] }) {
   return (
     <Card
       className={
@@ -262,24 +291,29 @@ function StaticPackageCard({ pkg }: { pkg: any }) {
         </div>
       )}
       <CardHeader>
-        <CardTitle className="text-lg">{pkg.name}</CardTitle>
-        <p className="text-sm text-primary font-medium">{pkg.tagline}</p>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-xl">{pkg.name}</CardTitle>
+          <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{pkg.tagline}</span>
+        </div>
         <div className="mt-2 text-3xl font-extrabold">
           {pkr(pkg.price)}{" "}
           <span className="text-sm font-normal text-muted-foreground">one-time</span>
         </div>
+        <p className="text-sm text-muted-foreground">{pkg.description}</p>
       </CardHeader>
       <CardContent className="space-y-4 flex-1 flex flex-col">
-        <p className="text-sm text-muted-foreground">{pkg.description}</p>
-
-        <div className="grid grid-cols-3 gap-2 rounded-xl bg-primary/5 border border-primary/10 p-3">
-          <EarnStat icon={TrendingUp} label="Daily" value={pkr(pkg.daily)} />
-          <EarnStat icon={CalendarDays} label="Weekly" value={pkr(pkg.weekly)} />
-          <EarnStat icon={Calendar} label="Monthly" value={pkr(pkg.monthly)} />
+        {/* Earnings table */}
+        <div className="rounded-xl border bg-primary/5 p-3">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2 text-center">Earnings Breakdown</div>
+          <div className="grid grid-cols-3 gap-1 text-center">
+            <EarnStat icon={TrendingUp} label="Daily" value={pkr(pkg.daily)} />
+            <EarnStat icon={CalendarDays} label="Weekly" value={pkr(pkg.weekly)} />
+            <EarnStat icon={Calendar} label="Monthly" value={pkr(pkg.monthly)} />
+          </div>
         </div>
 
         <ul className="space-y-1.5 flex-1">
-          {pkg.features.map((f: string, i: number) => (
+          {pkg.features.map((f, i) => (
             <li key={i} className="flex items-start gap-2 text-sm">
               <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <span>{f}</span>
@@ -287,9 +321,9 @@ function StaticPackageCard({ pkg }: { pkg: any }) {
           ))}
         </ul>
 
-        <p className="text-xs text-muted-foreground text-center pt-2 border-t">
-          Pay via OPay / Mashreq Bank / JazzCash above, then contact admin to activate.
-        </p>
+        <div className="pt-2 border-t text-xs text-muted-foreground text-center">
+          Pay via OPay or Mashreq Bank above, then contact admin to activate.
+        </div>
       </CardContent>
     </Card>
   );
@@ -297,17 +331,19 @@ function StaticPackageCard({ pkg }: { pkg: any }) {
 
 function EarnStat({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="text-center">
-      <Icon className="h-3.5 w-3.5 mx-auto text-primary mb-1" />
+    <div>
+      <Icon className="h-3.5 w-3.5 mx-auto text-primary mb-0.5" />
       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
       <div className="text-xs font-bold">{value}</div>
     </div>
   );
 }
 
+/* ─── DB-driven package card ──────────────────────────────────────── */
+
 function PackageCard({ pkg }: { pkg: any }) {
   const features: string[] = Array.isArray(pkg.features) ? pkg.features : [];
-  const daily = pkg.daily_earning ?? 0;
+  const daily = Number(pkg.daily_earning ?? 0);
   const weekly = daily * 7;
   const monthly = daily * 30;
 
@@ -324,21 +360,27 @@ function PackageCard({ pkg }: { pkg: any }) {
         </div>
       )}
       <CardHeader>
-        <CardTitle className="text-lg">{pkg.name}</CardTitle>
-        {pkg.tagline && <p className="text-sm text-primary font-medium">{pkg.tagline}</p>}
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-xl">{pkg.name}</CardTitle>
+          {pkg.tagline && (
+            <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{pkg.tagline}</span>
+          )}
+        </div>
         <div className="mt-2 text-3xl font-extrabold">
           {pkr(Number(pkg.price))}{" "}
           <span className="text-sm font-normal text-muted-foreground">one-time</span>
         </div>
+        {pkg.description && <p className="text-sm text-muted-foreground">{pkg.description}</p>}
       </CardHeader>
       <CardContent className="space-y-4 flex-1 flex flex-col">
-        {pkg.description && <p className="text-sm text-muted-foreground">{pkg.description}</p>}
-
         {daily > 0 && (
-          <div className="grid grid-cols-3 gap-2 rounded-xl bg-primary/5 border border-primary/10 p-3">
-            <EarnStat icon={TrendingUp} label="Daily" value={pkr(daily)} />
-            <EarnStat icon={CalendarDays} label="Weekly" value={pkr(weekly)} />
-            <EarnStat icon={Calendar} label="Monthly" value={pkr(monthly)} />
+          <div className="rounded-xl border bg-primary/5 p-3">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2 text-center">Earnings Breakdown</div>
+            <div className="grid grid-cols-3 gap-1 text-center">
+              <EarnStat icon={TrendingUp} label="Daily" value={pkr(daily)} />
+              <EarnStat icon={CalendarDays} label="Weekly" value={pkr(weekly)} />
+              <EarnStat icon={Calendar} label="Monthly" value={pkr(monthly)} />
+            </div>
           </div>
         )}
 
@@ -359,6 +401,8 @@ function PackageCard({ pkg }: { pkg: any }) {
   );
 }
 
+/* ─── Buy dialog ────────────────────────────────────────────────── */
+
 function BuyDialog({ pkg }: { pkg: any }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -369,17 +413,15 @@ function BuyDialog({ pkg }: { pkg: any }) {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const methodLabel =
-    method === "opay" ? `OPay — ${OPAY_NUMBER}` :
-    method === "mashreq" ? `Mashreq Bank — ${MASHREQ_ACCOUNT}` :
-    method === "jazzcash" ? `JazzCash — ${OPAY_NUMBER}` :
-    method === "easypaisa" ? `Easypaisa — ${OPAY_NUMBER}` : method;
+  const methodAccount = method === "opay" ? OPAY_NUMBER : MASHREQ_ACCOUNT;
+  const methodLabel = method === "opay" ? "OPay" : "Mashreq Bank";
 
   async function submit() {
     setBusy(true);
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) { toast.error("Please sign in"); return; }
+
       let screenshot_url: string | null = null;
       if (file) {
         const ext = file.name.split(".").pop() || "jpg";
@@ -391,6 +433,7 @@ function BuyDialog({ pkg }: { pkg: any }) {
         const { data: pub } = supabase.storage.from("proof-uploads").getPublicUrl(path);
         screenshot_url = pub.publicUrl;
       }
+
       const { error } = await supabase.from("package_purchases").insert({
         user_id: u.user.id,
         package_id: pkg.id,
@@ -403,6 +446,7 @@ function BuyDialog({ pkg }: { pkg: any }) {
         screenshot_url,
       });
       if (error) throw error;
+
       toast.success("Purchase submitted — we'll review and activate shortly!");
       setOpen(false);
       setFile(null);
@@ -418,25 +462,26 @@ function BuyDialog({ pkg }: { pkg: any }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full mt-auto" size="lg">Buy Now — {pkr(Number(pkg.price))}</Button>
+        <Button className="w-full mt-auto" size="lg">
+          Buy Now — {pkr(Number(pkg.price))}
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Buy {pkg.name}</DialogTitle>
+          <DialogTitle>Buy {pkg.name} Package</DialogTitle>
           <DialogDescription>
-            Send {pkr(Number(pkg.price))} via your chosen method, then upload a screenshot as proof.
+            Send {pkr(Number(pkg.price))} to one of the accounts below, then fill in your details and upload the screenshot.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
+          {/* Method picker */}
           <div>
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Payment Method</Label>
             <div className="grid grid-cols-2 gap-2 mt-1.5">
               {[
                 { id: "opay", label: "OPay" },
                 { id: "mashreq", label: "Mashreq Bank" },
-                { id: "jazzcash", label: "JazzCash" },
-                { id: "easypaisa", label: "Easypaisa" },
               ].map((m) => (
                 <Button
                   key={m.id}
@@ -449,9 +494,20 @@ function BuyDialog({ pkg }: { pkg: any }) {
                 </Button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-1.5 bg-muted/50 rounded-lg px-3 py-2 font-mono">
-              {methodLabel}
-            </p>
+            <div className="mt-2 rounded-lg bg-muted/60 border px-3 py-2 text-xs font-mono flex items-center justify-between">
+              <span>
+                <span className="font-semibold text-foreground">{methodLabel}:</span>{" "}
+                {methodAccount}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-1.5"
+                onClick={() => { navigator.clipboard.writeText(methodAccount); toast.success("Copied"); }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
 
           <div>
@@ -463,12 +519,16 @@ function BuyDialog({ pkg }: { pkg: any }) {
             <Input value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} placeholder="03XX-XXXXXXX" />
           </div>
           <div>
-            <Label>Payment Screenshot</Label>
+            <Label>Payment Screenshot (required)</Label>
             <div className="flex items-center gap-2 mt-1">
-              <Input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
               <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
             </div>
-            {file && <p className="text-xs text-muted-foreground mt-1">{file.name}</p>}
+            {file && <p className="text-xs text-emerald-600 mt-1">✓ {file.name}</p>}
           </div>
           <div>
             <Label>Notes (optional)</Label>
@@ -484,7 +544,7 @@ function BuyDialog({ pkg }: { pkg: any }) {
             {busy ? "Submitting…" : "Submit Purchase Request"}
           </Button>
           <p className="text-xs text-center text-muted-foreground">
-            Our team will verify and activate your package within a few hours.
+            Our team verifies and activates within a few hours.
           </p>
         </div>
       </DialogContent>

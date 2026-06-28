@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCurrentUserContext } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Wallet, TrendingUp, ListTodo, Video, Package,
-  ArrowRight, Star, AlertTriangle, ShieldAlert,
+  ArrowRight, Star, AlertTriangle, ShieldAlert, Gavel,
 } from "lucide-react";
+import { FineAlertSection } from "@/components/fine-alert-section";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -28,7 +30,7 @@ function DashboardPage() {
     queryKey: ["my-strikes"],
     queryFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
+      if (!u.user) return [];
       const { data } = await supabase
         .from("strikes")
         .select("*")
@@ -51,7 +53,6 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Welcome back{data?.profile?.full_name ? `, ${data.profile.full_name.split(" ")[0]}` : ""}! 👋
@@ -59,7 +60,7 @@ function DashboardPage() {
         <p className="text-muted-foreground mt-1">Here&apos;s your account at a glance.</p>
       </div>
 
-      {/* Profile incomplete notice */}
+      {/* Profile incomplete */}
       {isProfileIncomplete && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
@@ -89,6 +90,9 @@ function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Fine alerts */}
+      <FineAlertSection />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -163,11 +167,11 @@ function DashboardPage() {
           </div>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold mt-0.5">3.</span>
-            <span>Watch videos or complete tasks every day to earn your daily reward.</span>
+            <span>Complete daily tasks to earn your daily reward.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold mt-0.5">4.</span>
-            <span>Withdraw earnings via JazzCash, Easypaisa, OPay, or bank transfer.</span>
+            <span>Withdraw earnings via OPay or Mashreq Bank transfer.</span>
           </div>
         </CardContent>
       </Card>

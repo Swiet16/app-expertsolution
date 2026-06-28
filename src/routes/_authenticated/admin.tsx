@@ -15,6 +15,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
+function pkr(val: number) {
+  return `₨${val.toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
+}
+
 function AdminPage() {
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
@@ -35,7 +39,7 @@ function AdminPage() {
           <Stat label="Approved" value={stats.tasksApproved} />
           <Stat label="Pending withdrawals" value={stats.pendingWithdrawals} />
           <Stat label="Pending reviews" value={stats.pendingReviews} />
-          <Stat label="Paid out" value={`$${Number(stats.totalPaid).toFixed(2)}`} />
+          <Stat label="Paid out" value={pkr(Number(stats.totalPaid ?? 0))} />
         </div>
       )}
       <Tabs defaultValue="queue">
@@ -43,6 +47,7 @@ function AdminPage() {
           <TabsList className="inline-flex w-max min-w-full">
             <TabsTrigger value="queue">Task queue</TabsTrigger>
             <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+            <TabsTrigger value="fines">Fines</TabsTrigger>
             <TabsTrigger value="reviews">Reviews</TabsTrigger>
             <TabsTrigger value="purchases">Purchases</TabsTrigger>
             <TabsTrigger value="joins">Plan joins</TabsTrigger>
@@ -51,6 +56,7 @@ function AdminPage() {
         </div>
         <TabsContent value="queue"><TaskQueue /></TabsContent>
         <TabsContent value="withdrawals"><WithdrawalsQueue /></TabsContent>
+        <TabsContent value="fines"><FinesQueue /></TabsContent>
         <TabsContent value="reviews"><ReviewsQueue /></TabsContent>
         <TabsContent value="purchases"><PurchasesQueue /></TabsContent>
         <TabsContent value="joins"><PlanJoinsQueue /></TabsContent>
@@ -87,8 +93,8 @@ function UsersList() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-semibold">${Number(w?.available_balance ?? 0).toFixed(2)}</div>
-                <div className="text-[10px] text-muted-foreground">earned ${Number(w?.total_earned ?? 0).toFixed(2)}</div>
+                <div className="text-sm font-semibold">{pkr(Number(w?.available_balance ?? 0))}</div>
+                <div className="text-[10px] text-muted-foreground">earned {pkr(Number(w?.total_earned ?? 0))}</div>
               </div>
             </CardContent>
           </Card>
@@ -99,7 +105,16 @@ function UsersList() {
 }
 
 function Stat({ label, value }: { label: string; value: any }) {
-  return <Card className="glass"><CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground font-medium">{label}</CardTitle></CardHeader><CardContent><div className="text-xl font-bold">{value ?? 0}</div></CardContent></Card>;
+  return (
+    <Card className="glass">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs text-muted-foreground font-medium">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xl font-bold">{value ?? 0}</div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function TaskQueue() {
@@ -124,7 +139,7 @@ function TaskQueue() {
                 <CardTitle className="text-base">{t.title}</CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">by {t.user_full_name ?? t.user_username}</p>
               </div>
-              <span className="text-sm font-medium">{Number(t.reward).toFixed(2)} {t.currency}</span>
+              <span className="text-sm font-medium">{pkr(Number(t.reward))}</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -173,10 +188,7 @@ function WithdrawalsQueue() {
         .order("created_at", { ascending: true });
       if (!ws?.length) return [];
       const ids = Array.from(new Set(ws.map((w) => w.user_id)));
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, full_name, username")
-        .in("id", ids);
+      const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", ids);
       const map = new Map((profs ?? []).map((p) => [p.id, p]));
       return ws.map((w) => ({ ...w, profile: map.get(w.user_id) }));
     },
@@ -190,17 +202,80 @@ function WithdrawalsQueue() {
   return (
     <div className="grid gap-3 mt-4">
       {data.map((w: any) => (
-        <Card key={w.id} className="glass"><CardContent className="py-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="font-medium">${Number(w.amount).toFixed(2)} via {w.method}</div>
-            <div className="text-xs text-muted-foreground">{w.profile?.full_name ?? w.profile?.username ?? w.user_id}</div>
-            <pre className="text-xs mt-1 text-muted-foreground">{JSON.stringify(w.details)}</pre>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => process(w.id, true)}>Mark paid</Button>
-            <Button size="sm" variant="destructive" onClick={() => process(w.id, false)}>Reject</Button>
-          </div>
-        </CardContent></Card>
+        <Card key={w.id} className="glass">
+          <CardContent className="py-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="font-medium">{pkr(Number(w.amount))} via {w.method}</div>
+              <div className="text-xs text-muted-foreground">{w.profile?.full_name ?? w.profile?.username ?? w.user_id}</div>
+              {w.details && <pre className="text-xs mt-1 text-muted-foreground">{JSON.stringify(w.details)}</pre>}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => process(w.id, true)}>Mark paid</Button>
+              <Button size="sm" variant="destructive" onClick={() => process(w.id, false)}>Reject</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function FinesQueue() {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["admin-fines"],
+    queryFn: async () => {
+      const { data: fines } = await supabase
+        .from("fines")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (!fines?.length) return [];
+      const ids = Array.from(new Set(fines.map((f) => f.user_id)));
+      const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", ids);
+      const map = new Map((profs ?? []).map((p) => [p.id, p]));
+      return fines.map((f) => ({ ...f, profile: map.get(f.user_id) }));
+    },
+  });
+
+  async function review(id: string, approve: boolean) {
+    const { data, error } = await supabase.rpc("review_fine_payment", { _fine_id: id, _approve: approve });
+    if (error || !(data as any)?.success) toast.error((data as any)?.error ?? error?.message ?? "Failed");
+    else { toast.success(approve ? "Fine cleared" : "Proof rejected"); qc.invalidateQueries({ queryKey: ["admin-fines"] }); }
+  }
+
+  if (!data?.length) return <p className="text-muted-foreground mt-4">No fines on record.</p>;
+
+  const statusColor = (s: string | null) =>
+    s === "paid" ? "default" : s === "submitted" ? "secondary" : s === "rejected" ? "destructive" : "secondary";
+
+  return (
+    <div className="grid gap-3 mt-4">
+      {data.map((f: any) => (
+        <Card key={f.id} className="glass">
+          <CardContent className="py-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold">{pkr(Number(f.amount))} fine</div>
+                <div className="text-xs text-muted-foreground">{f.profile?.full_name ?? f.profile?.username ?? f.user_id}</div>
+                {f.reason && <p className="text-xs text-muted-foreground mt-1">{f.reason}</p>}
+                <div className="text-[11px] text-muted-foreground mt-1">{new Date(f.created_at).toLocaleString()}</div>
+              </div>
+              <Badge variant={statusColor(f.status) as any} className="capitalize shrink-0">{f.status ?? "pending"}</Badge>
+            </div>
+            {f.proof_screenshot_url && (
+              <a href={f.proof_screenshot_url} target="_blank" rel="noreferrer" className="block">
+                <img src={f.proof_screenshot_url} alt="Fine proof" className="max-h-40 rounded border object-contain bg-muted" />
+              </a>
+            )}
+            {f.status === "submitted" && (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => review(f.id, true)}>Clear fine</Button>
+                <Button size="sm" variant="destructive" onClick={() => review(f.id, false)}>Reject proof</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -224,11 +299,16 @@ function ReviewsQueue() {
   return (
     <div className="grid gap-3 mt-4">
       {data.map((r) => (
-        <Card key={r.id} className="glass"><CardContent className="py-4 space-y-2">
-          <div className="font-medium">{r.title ?? `Rating ${r.rating}`}</div>
-          {r.content && <p className="text-sm text-muted-foreground">{r.content}</p>}
-          <div className="flex gap-2"><Button size="sm" onClick={() => act(r.id, true)}>Approve</Button><Button size="sm" variant="destructive" onClick={() => act(r.id, false)}>Reject</Button></div>
-        </CardContent></Card>
+        <Card key={r.id} className="glass">
+          <CardContent className="py-4 space-y-2">
+            <div className="font-medium">{r.title ?? `Rating ${r.rating}`}</div>
+            {r.content && <p className="text-sm text-muted-foreground">{r.content}</p>}
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => act(r.id, true)}>Approve</Button>
+              <Button size="sm" variant="destructive" onClick={() => act(r.id, false)}>Reject</Button>
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -269,7 +349,7 @@ function PurchasesQueue() {
           <CardContent className="py-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-medium">{p.pkg?.name ?? "Package"} — {Number(p.amount).toFixed(0)} {p.currency}</div>
+                <div className="font-medium">{p.pkg?.name ?? "Package"} — {pkr(Number(p.amount))}</div>
                 <div className="text-xs text-muted-foreground">
                   by {p.profile?.full_name ?? p.profile?.username ?? p.user_id} · {p.payment_method}
                 </div>

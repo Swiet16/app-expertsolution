@@ -17,6 +17,10 @@ export const Route = createFileRoute("/_authenticated/super-admin")({
   component: SuperAdminPage,
 });
 
+function pkr(val: number) {
+  return `₨${val.toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
+}
+
 function SuperAdminPage() {
   const { data: stats } = useQuery({
     queryKey: ["super-stats"],
@@ -36,8 +40,8 @@ function SuperAdminPage() {
           <Stat label="Tasks" value={stats.total_tasks} />
           <Stat label="Submitted" value={stats.tasks_submitted} />
           <Stat label="Approved" value={stats.tasks_approved} />
-          <Stat label="Earned" value={`$${Number(stats.total_earned).toFixed(2)}`} />
-          <Stat label="Withdrawn" value={`$${Number(stats.total_withdrawn).toFixed(2)}`} />
+          <Stat label="Earned" value={pkr(Number(stats.total_earned ?? 0))} />
+          <Stat label="Withdrawn" value={pkr(Number(stats.total_withdrawn ?? 0))} />
         </div>
       )}
       <Tabs defaultValue="bulk">
@@ -55,13 +59,22 @@ function SuperAdminPage() {
 }
 
 function Stat({ label, value }: { label: string; value: any }) {
-  return <Card className="glass"><CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground font-medium">{label}</CardTitle></CardHeader><CardContent><div className="text-xl font-bold">{value ?? 0}</div></CardContent></Card>;
+  return (
+    <Card className="glass">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs text-muted-foreground font-medium">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xl font-bold">{value ?? 0}</div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function BulkAssign() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [reward, setReward] = useState("1");
+  const [reward, setReward] = useState("80");
   const [videoLinks, setVideoLinks] = useState("");
   const [taskType, setTaskType] = useState("general");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -76,7 +89,7 @@ function BulkAssign() {
     setSaving(true);
     const { data, error } = await supabase.rpc("bulk_assign_task", {
       _title: title, _description: description, _instructions: "",
-      _task_type: taskType, _reward: parseFloat(reward) || 0, _currency: "USD",
+      _task_type: taskType, _reward: parseFloat(reward) || 0, _currency: "PKR",
       _video_links: videoLinks.split("\n").map((s) => s.trim()).filter(Boolean),
       _thumbnail_url: undefined, _auto_approve: false,
       _user_ids: Array.from(selectedIds),
@@ -88,30 +101,36 @@ function BulkAssign() {
 
   return (
     <div className="grid lg:grid-cols-2 gap-4 mt-4">
-      <Card className="glass"><CardHeader><CardTitle>Task details</CardTitle></CardHeader><CardContent className="space-y-3">
-        <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-        <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} /></div>
-        <div className="grid grid-cols-2 gap-2">
-          <div><Label>Reward (USD)</Label><Input type="number" value={reward} onChange={(e) => setReward(e.target.value)} /></div>
-          <div><Label>Type</Label><Input value={taskType} onChange={(e) => setTaskType(e.target.value)} placeholder="general / video" /></div>
-        </div>
-        <div><Label>Video links (one per line)</Label><Textarea value={videoLinks} onChange={(e) => setVideoLinks(e.target.value)} rows={3} /></div>
-        <Button onClick={assign} disabled={saving}>Assign to {selectedIds.size} users</Button>
-      </CardContent></Card>
-      <Card className="glass"><CardHeader><CardTitle>Pick users</CardTitle></CardHeader><CardContent>
-        <div className="max-h-[420px] overflow-y-auto space-y-1">
-          {(users ?? []).map((u: any) => (
-            <label key={u.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-muted cursor-pointer">
-              <Checkbox checked={selectedIds.has(u.id)} onCheckedChange={(v) => {
-                setSelectedIds((s) => { const n = new Set(s); v ? n.add(u.id) : n.delete(u.id); return n; });
-              }} />
-              <Avatar className="h-6 w-6"><AvatarImage src={u.avatar_url} /><AvatarFallback>{(u.full_name ?? "U")[0]}</AvatarFallback></Avatar>
-              <span className="text-sm truncate flex-1">{u.full_name ?? u.username ?? u.email}</span>
-              <span className="text-xs text-muted-foreground">{u.completed_tasks ?? 0} done</span>
-            </label>
-          ))}
-        </div>
-      </CardContent></Card>
+      <Card className="glass">
+        <CardHeader><CardTitle>Task details</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+          <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label>Reward (PKR)</Label><Input type="number" value={reward} onChange={(e) => setReward(e.target.value)} /></div>
+            <div><Label>Type</Label><Input value={taskType} onChange={(e) => setTaskType(e.target.value)} placeholder="general / video" /></div>
+          </div>
+          <div><Label>Video links (one per line)</Label><Textarea value={videoLinks} onChange={(e) => setVideoLinks(e.target.value)} rows={3} /></div>
+          <Button onClick={assign} disabled={saving}>Assign to {selectedIds.size} users</Button>
+        </CardContent>
+      </Card>
+      <Card className="glass">
+        <CardHeader><CardTitle>Pick users</CardTitle></CardHeader>
+        <CardContent>
+          <div className="max-h-[420px] overflow-y-auto space-y-1">
+            {(users ?? []).map((u: any) => (
+              <label key={u.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-muted cursor-pointer">
+                <Checkbox checked={selectedIds.has(u.id)} onCheckedChange={(v) => {
+                  setSelectedIds((s) => { const n = new Set(s); v ? n.add(u.id) : n.delete(u.id); return n; });
+                }} />
+                <Avatar className="h-6 w-6"><AvatarImage src={u.avatar_url} /><AvatarFallback>{(u.full_name ?? "U")[0]}</AvatarFallback></Avatar>
+                <span className="text-sm truncate flex-1">{u.full_name ?? u.username ?? u.email}</span>
+                <span className="text-xs text-muted-foreground">{u.completed_tasks ?? 0} done</span>
+              </label>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -140,20 +159,22 @@ function UserList() {
         {filtered.map((u: any) => {
           const roles: string[] = u.roles ?? [];
           return (
-            <Card key={u.id} className="glass"><CardContent className="py-3 flex flex-wrap items-center gap-3">
-              <Avatar><AvatarImage src={u.avatar_url} /><AvatarFallback>{(u.full_name ?? "U")[0]}</AvatarFallback></Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="font-medium truncate">{u.full_name ?? u.username}</div>
-                <div className="text-xs text-muted-foreground truncate">{u.email}</div>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {(["client","admin","super_admin"] as const).map((r) => (
-                  <label key={r} className="flex items-center gap-1 text-xs">
-                    <Checkbox checked={roles.includes(r)} onCheckedChange={(v) => toggleRole(u.id, r, !!v)} /> {r}
-                  </label>
-                ))}
-              </div>
-            </CardContent></Card>
+            <Card key={u.id} className="glass">
+              <CardContent className="py-3 flex flex-wrap items-center gap-3">
+                <Avatar><AvatarImage src={u.avatar_url} /><AvatarFallback>{(u.full_name ?? "U")[0]}</AvatarFallback></Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{u.full_name ?? u.username}</div>
+                  <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(["client", "admin", "super_admin"] as const).map((r) => (
+                    <label key={r} className="flex items-center gap-1 text-xs">
+                      <Checkbox checked={roles.includes(r)} onCheckedChange={(v) => toggleRole(u.id, r, !!v)} /> {r}
+                    </label>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
@@ -163,7 +184,9 @@ function UserList() {
 
 function FakeReviews() {
   const qc = useQueryClient();
-  const [name, setName] = useState(""); const [content, setContent] = useState(""); const [rating, setRating] = useState(5);
+  const [name, setName] = useState("");
+  const [content, setContent] = useState("");
+  const [rating, setRating] = useState(5);
   const { data } = useQuery({
     queryKey: ["fake-reviews-all"],
     queryFn: async () => { const { data } = await supabase.from("fake_reviews").select("*").order("sort_order"); return data ?? []; },
@@ -177,22 +200,28 @@ function FakeReviews() {
   }
   return (
     <div className="grid lg:grid-cols-2 gap-4 mt-4">
-      <Card className="glass"><CardHeader><CardTitle>Add fake review</CardTitle></CardHeader><CardContent className="space-y-3">
-        <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-        <div><Label>Rating</Label><Input type="number" min={1} max={5} value={rating} onChange={(e) => setRating(parseInt(e.target.value) || 5)} /></div>
-        <div><Label>Content</Label><Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} /></div>
-        <Button onClick={create}>Save</Button>
-      </CardContent></Card>
-      <Card className="glass"><CardHeader><CardTitle>Existing ({data?.length ?? 0})</CardTitle></CardHeader><CardContent>
-        <div className="space-y-2 max-h-[420px] overflow-y-auto">
-          {(data ?? []).map((r: any) => (
-            <div key={r.id} className="border rounded p-2 text-sm">
-              <div className="font-medium">{r.reviewer_name} · {r.rating}★</div>
-              <div className="text-xs text-muted-foreground">{r.content}</div>
-            </div>
-          ))}
-        </div>
-      </CardContent></Card>
+      <Card className="glass">
+        <CardHeader><CardTitle>Add fake review</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div><Label>Rating</Label><Input type="number" min={1} max={5} value={rating} onChange={(e) => setRating(parseInt(e.target.value) || 5)} /></div>
+          <div><Label>Content</Label><Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} /></div>
+          <Button onClick={create}>Save</Button>
+        </CardContent>
+      </Card>
+      <Card className="glass">
+        <CardHeader><CardTitle>Existing ({data?.length ?? 0})</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-[420px] overflow-y-auto">
+            {(data ?? []).map((r: any) => (
+              <div key={r.id} className="border rounded p-2 text-sm">
+                <div className="font-medium">{r.reviewer_name} · {r.rating}★</div>
+                <div className="text-xs text-muted-foreground">{r.content}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
