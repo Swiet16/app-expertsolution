@@ -85,7 +85,20 @@ function RootComponent() {
       <OfflineGate>
         <Outlet />
       </OfflineGate>
-      <Toaster position="top-right" richColors />
+      <Toaster
+        position="bottom-right"
+        richColors
+        toastOptions={{
+          classNames: {
+            toast: "rounded-2xl shadow-2xl border font-medium text-sm",
+            title: "font-semibold",
+            description: "text-xs opacity-80",
+          },
+          duration: 3500,
+        }}
+        expand={false}
+        offset={20}
+      />
     </QueryClientProvider>
   );
 }

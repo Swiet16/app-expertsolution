@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import {
   Check, Sparkles, Copy, Upload, Key, TrendingUp,
-  Calendar, CalendarDays, Phone, ArrowRight, Zap,
+  Calendar, CalendarDays, ArrowRight, Zap, Handshake,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/packages")({
@@ -70,7 +70,7 @@ function PackagesPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -81,8 +81,8 @@ function PackagesPage() {
         </p>
       </div>
 
-      {/* Payment details */}
-      <PaymentInfo />
+      {/* Payment partners — unique design */}
+      <PaymentPartnersSection />
 
       {/* Redeem key */}
       <RedeemKeyCard />
@@ -108,8 +108,8 @@ function PackagesPage() {
               className="flex items-center justify-between gap-3 rounded-xl border bg-card/60 px-4 py-3 text-sm"
             >
               <div className="min-w-0">
-                <div className="font-medium">{pkr(Number(pp.amount))} · {pp.payment_method}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="font-medium truncate">{pkr(Number(pp.amount))} · {pp.payment_method}</div>
+                <div className="text-xs text-muted-foreground truncate">
                   {new Date(pp.created_at).toLocaleString()}
                   {pp.admin_note && ` · ${pp.admin_note}`}
                 </div>
@@ -128,29 +128,104 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant={v as any} className="capitalize shrink-0">{status}</Badge>;
 }
 
-/* ── Payment info ─────────────────────────────── */
-function PaymentInfo() {
-  function copy(t: string) { navigator.clipboard.writeText(t); toast.success("Copied!"); }
+/* ── Payment Partners — unique handshake design ───── */
+function PaymentPartnersSection() {
+  function copy(t: string) {
+    navigator.clipboard.writeText(t);
+    toast.success("Account number copied!", { description: "Paste it in your payment app." });
+  }
+
+  const partners = [
+    {
+      id: "opay",
+      name: "OPay",
+      account: OPAY,
+      color: "from-green-500 to-emerald-600",
+      bg: "bg-green-50 dark:bg-green-950/30",
+      border: "border-green-200 dark:border-green-800/50",
+      badge: "bg-green-500/15 text-green-700 dark:text-green-400",
+      icon: "💚",
+      tagline: "Instant transfer",
+    },
+    {
+      id: "mashreq",
+      name: "Mashreq Bank",
+      account: MASHREQ,
+      color: "from-red-500 to-rose-600",
+      bg: "bg-red-50 dark:bg-red-950/30",
+      border: "border-red-200 dark:border-red-800/50",
+      badge: "bg-red-500/15 text-red-700 dark:text-red-400",
+      icon: "🏦",
+      tagline: "Bank transfer",
+    },
+  ];
+
   return (
-    <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
-      <div className="flex items-center gap-2 mb-3 text-sm font-semibold">
-        <Phone className="h-4 w-4 text-primary" /> Payment Accounts
+    <div className="rounded-2xl border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/40">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-primary/10 grid place-items-center">
+            <Handshake className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <div className="text-sm font-bold">Official Payment Partners</div>
+            <div className="text-[11px] text-muted-foreground">We are in collaboration with these trusted platforms</div>
+          </div>
+        </div>
+        {/* Animated handshake dots */}
+        <div className="ml-auto flex items-center gap-1">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            />
+          ))}
+        </div>
       </div>
-      <div className="space-y-2">
-        {[
-          { label: "OPay", value: OPAY },
-          { label: "Mashreq Bank", value: MASHREQ },
-        ].map((r) => (
-          <div key={r.label} className="flex items-center gap-2 justify-between bg-background/70 border rounded-xl px-3 py-2.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-primary bg-primary/10 px-2 py-0.5 rounded-md shrink-0">{r.label}</span>
-              <span className="font-mono text-sm font-semibold truncate">{r.value}</span>
+
+      <div className="p-4 grid sm:grid-cols-2 gap-3">
+        {partners.map((p) => (
+          <div key={p.id} className={`relative rounded-xl border ${p.border} ${p.bg} overflow-hidden group`}>
+            {/* Gradient stripe at top */}
+            <div className={`h-1 w-full bg-gradient-to-r ${p.color}`} />
+            <div className="p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl leading-none">{p.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-sm">{p.name}</div>
+                  <div className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full inline-block ${p.badge}`}>{p.tagline}</div>
+                </div>
+                {/* Animated pulse = live/active */}
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-2 rounded-lg bg-background/70 border px-2.5 py-2">
+                <span className="font-mono text-sm font-bold tracking-wide">{p.account}</span>
+                <button
+                  onClick={() => copy(p.account)}
+                  className="shrink-0 rounded-md p-1.5 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  title="Copy"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-            <Button size="sm" variant="ghost" className="h-7 px-2 shrink-0" onClick={() => copy(r.value)}>
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
           </div>
         ))}
+      </div>
+
+      {/* Collab footer */}
+      <div className="px-4 pb-3 flex items-center gap-2">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
+          <span className="animate-[spin_3s_linear_infinite] inline-block">🤝</span>
+          Trusted partnership — Pay securely
+        </span>
+        <div className="flex-1 h-px bg-border" />
       </div>
     </div>
   );
@@ -169,7 +244,11 @@ function RedeemKeyCard() {
       const { data, error } = await supabase.rpc("redeem_activation_key", { _key: key.trim() });
       if (error || !(data as any)?.success)
         toast.error((data as any)?.error ?? error?.message ?? "Invalid key");
-      else { toast.success("Key redeemed! Package activated."); setKey(""); qc.invalidateQueries(); }
+      else {
+        toast.success("Package activated! 🎉", { description: "Your plan is now live. Start earning!" });
+        setKey("");
+        qc.invalidateQueries();
+      }
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
   }
@@ -196,10 +275,9 @@ function RedeemKeyCard() {
   );
 }
 
-/* ── Package card (minimal front) ─────────────── */
-
+/* ── Package card ─────────────────────────────── */
 const CARD_THEMES = [
-  { from: "from-emerald-600", to: "to-emerald-800", accent: "text-emerald-400" },
+  { from: "from-emerald-600", to: "to-emerald-800", accent: "text-emerald-300" },
   { from: "from-violet-600", to: "to-violet-900", accent: "text-violet-300" },
   { from: "from-amber-500", to: "to-orange-700", accent: "text-yellow-300" },
 ];
@@ -221,14 +299,13 @@ function PackageCard({ pkg }: { pkg: any }) {
           </span>
         </div>
       )}
-
-      {/* Decorative circles */}
       <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-xl" />
       <div className="absolute -bottom-12 -left-8 h-40 w-40 rounded-full bg-black/20 blur-xl" />
 
-      <div className="relative p-5 sm:p-6 flex flex-col min-h-[200px]">
+      <div className="relative p-5 sm:p-6 flex flex-col gap-3">
+        {/* Title row */}
         <div className="flex items-start justify-between gap-2">
-          <div>
+          <div className="min-w-0">
             <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>
               {pkg.tagline || "Earning Plan"}
             </div>
@@ -242,19 +319,19 @@ function PackageCard({ pkg }: { pkg: any }) {
           )}
         </div>
 
-        <div className="mt-4">
-          <div className="text-3xl font-black tracking-tight">
-            {pkr(price)}
-          </div>
+        {/* Price */}
+        <div>
+          <div className="text-3xl font-black tracking-tight">{pkr(price)}</div>
           <div className="text-xs opacity-70 font-medium">one-time package</div>
         </div>
 
-        {/* Short snippet of description */}
+        {/* Description — clamped to 2 lines, no overflow */}
         {pkg.description && (
-          <p className="mt-2 text-sm opacity-80 line-clamp-2 leading-snug">{pkg.description}</p>
+          <p className="text-sm opacity-80 line-clamp-2 leading-snug">{pkg.description}</p>
         )}
 
-        <div className="mt-auto pt-4">
+        {/* CTA */}
+        <div className="mt-1">
           <PackageDetailDialog pkg={pkg} features={features} daily={daily} theme={theme} />
         </div>
       </div>
@@ -262,7 +339,7 @@ function PackageCard({ pkg }: { pkg: any }) {
   );
 }
 
-/* ── Detail popup ─────────────────────────────── */
+/* ── Detail dialog ───────────────────────────── */
 function PackageDetailDialog({
   pkg, features, daily, theme,
 }: {
@@ -275,15 +352,15 @@ function PackageDetailDialog({
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur font-semibold gap-1.5 group-hover:bg-white/25 transition-all"
+          className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur font-semibold gap-1.5 transition-all"
           size="sm"
         >
           View Details & Buy <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-3xl overflow-hidden">
-        {/* Header gradient */}
-        <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} text-white p-6 pb-8`}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-3xl">
+        {/* Header */}
+        <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} text-white p-6 pb-8 rounded-t-3xl overflow-hidden`}>
           <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10 blur-xl" />
           <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-black/20 blur-xl" />
           <div className="relative">
@@ -291,14 +368,14 @@ function PackageDetailDialog({
               {pkg.tagline || "Earning Plan"}
             </div>
             <DialogTitle className="text-2xl font-black text-white">{pkg.name}</DialogTitle>
-            <DialogDescription className="sr-only">{pkg.description || `${pkg.name} earning package details and purchase form`}</DialogDescription>
-            <div className="mt-3 flex items-end gap-4">
+            <DialogDescription className="sr-only">{pkg.name} package details and purchase.</DialogDescription>
+            <div className="mt-3 flex items-end gap-4 flex-wrap">
               <div>
                 <div className="text-4xl font-black tracking-tight">{pkr(Number(pkg.price))}</div>
                 <div className="text-xs opacity-70">one-time joining fee</div>
               </div>
               {daily > 0 && (
-                <div className="ml-auto text-right">
+                <div className="text-right">
                   <div className={`text-xs ${theme.accent}`}>daily earning</div>
                   <div className="text-2xl font-black">{pkr(daily)}</div>
                 </div>
@@ -325,7 +402,7 @@ function PackageDetailDialog({
             </div>
           )}
 
-          {/* Description */}
+          {/* Description — full, no clamp */}
           {pkg.description && (
             <div>
               <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1.5">About this plan</div>
@@ -333,7 +410,7 @@ function PackageDetailDialog({
             </div>
           )}
 
-          {/* Features list */}
+          {/* Features */}
           {features.length > 0 && (
             <div>
               <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-2.5 flex items-center gap-1.5">
@@ -352,10 +429,7 @@ function PackageDetailDialog({
             </div>
           )}
 
-          {/* Divider */}
           <div className="border-t" />
-
-          {/* Buy section */}
           <BuySection pkg={pkg} />
         </div>
       </DialogContent>
@@ -363,7 +437,7 @@ function PackageDetailDialog({
   );
 }
 
-/* ── Buy section (inside popup) ─────────────── */
+/* ── Buy section ──────────────────────────── */
 function BuySection({ pkg }: { pkg: any }) {
   const qc = useQueryClient();
   const [method, setMethod] = useState("opay");
@@ -405,7 +479,7 @@ function BuySection({ pkg }: { pkg: any }) {
       });
       if (error) throw error;
 
-      toast.success("Request submitted! We'll activate your package shortly.");
+      toast.success("Request submitted! ✅", { description: "We'll activate your package within a few hours." });
       setFile(null); setPayerName(""); setPayerPhone(""); setNotes("");
       qc.invalidateQueries({ queryKey: ["my-purchases"] });
     } catch (e: any) {
@@ -421,28 +495,26 @@ function BuySection({ pkg }: { pkg: any }) {
         <Upload className="h-3 w-3 text-primary" /> Submit Purchase
       </div>
 
-      {/* Method picker */}
       <div className="grid grid-cols-2 gap-2">
         {[
-          { id: "opay", label: "OPay" },
-          { id: "mashreq", label: "Mashreq Bank" },
+          { id: "opay", label: "OPay", emoji: "💚" },
+          { id: "mashreq", label: "Mashreq Bank", emoji: "🏦" },
         ].map((m) => (
           <button
             key={m.id}
             type="button"
             onClick={() => setMethod(m.id)}
-            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all ${
+            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
               method === m.id
                 ? "bg-primary text-primary-foreground border-primary shadow-md"
                 : "bg-card hover:bg-muted"
             }`}
           >
-            {m.label}
+            {m.emoji} {m.label}
           </button>
         ))}
       </div>
 
-      {/* Account to pay */}
       <div className="flex items-center justify-between rounded-xl bg-muted/60 border px-3 py-2.5 text-sm">
         <span>
           <span className="font-bold">{label}:</span>{" "}
@@ -450,7 +522,7 @@ function BuySection({ pkg }: { pkg: any }) {
         </span>
         <Button
           size="sm" variant="ghost" className="h-7 px-1.5"
-          onClick={() => { navigator.clipboard.writeText(account); toast.success("Copied"); }}
+          onClick={() => { navigator.clipboard.writeText(account); toast.success("Copied!"); }}
         >
           <Copy className="h-3.5 w-3.5" />
         </Button>
@@ -487,33 +559,30 @@ function BuySection({ pkg }: { pkg: any }) {
         {busy ? "Submitting…" : `Submit Request — ${pkr(Number(pkg.price))}`}
       </Button>
       <p className="text-xs text-center text-muted-foreground">
-        We verify and activate within a few hours. You'll see status updates below.
+        We verify and activate within a few hours. You&apos;ll see status updates below.
       </p>
     </div>
   );
 }
 
-/* ── Static fallback packages ─────────────────── */
+/* ── Fallback packages ───────────────────────── */
 const FALLBACK = [
   {
     id: "f1", name: "Starter", tagline: "Video Watching", price: 799,
     description: "Watch short YouTube videos daily and earn ₨80 per day. Simple, easy, and no experience needed.",
-    daily: 80, weekly: 560, monthly: 2400,
-    features: ["Watch 5–10 videos per day","Daily earning ₨80","Weekly earning ₨560","Monthly earning ₨2,400","Withdraw via OPay or Mashreq Bank","24/7 support"],
+    daily: 80, features: ["Watch 5–10 videos per day", "Daily earning ₨80", "Weekly ₨560 · Monthly ₨2,400", "Withdraw via OPay or Mashreq", "24/7 support"],
     sort_order: 1, is_featured: false,
   },
   {
     id: "f2", name: "Professional", tagline: "Assignment Writing", price: 1299,
     description: "Write essays and college assignments submitted by clients worldwide. Earn ₨250 every day.",
-    daily: 250, weekly: 1750, monthly: 7500,
-    features: ["Essay & assignment writing","College / university tasks","Daily earning ₨250","Weekly earning ₨1,750","Monthly earning ₨7,500","Priority task assignment","Withdraw via OPay or Mashreq Bank"],
+    daily: 250, features: ["Essay & assignment writing", "College / university tasks", "Daily earning ₨250", "Weekly ₨1,750 · Monthly ₨7,500", "Priority task assignment"],
     sort_order: 2, is_featured: true,
   },
   {
     id: "f3", name: "Premium", tagline: "Video + Data Entry", price: 4500,
     description: "Combine video watching and data entry for maximum daily income. Best ROI on the platform.",
-    daily: 400, weekly: 2800, monthly: 12000,
-    features: ["Video watching tasks","Data entry tasks","Daily earning ₨400","Weekly earning ₨2,800","Monthly earning ₨12,000","Highest task priority","All withdrawal methods","VIP support"],
+    daily: 400, features: ["Video watching tasks", "Data entry tasks", "Daily earning ₨400", "Weekly ₨2,800 · Monthly ₨12,000", "VIP support"],
     sort_order: 3, is_featured: false,
   },
 ];
@@ -532,9 +601,9 @@ function FallbackGrid() {
             )}
             <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-xl" />
             <div className="absolute -bottom-12 -left-8 h-40 w-40 rounded-full bg-black/20 blur-xl" />
-            <div className="relative p-5 sm:p-6 flex flex-col min-h-[200px]">
+            <div className="relative p-5 sm:p-6 flex flex-col gap-3">
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="min-w-0">
                   <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>{p.tagline}</div>
                   <h3 className="text-xl font-extrabold">{p.name}</h3>
                 </div>
@@ -543,102 +612,74 @@ function FallbackGrid() {
                   <div className="text-lg font-black">{pkr(p.daily)}</div>
                 </div>
               </div>
-              <div className="mt-4">
+              <div>
                 <div className="text-3xl font-black tracking-tight">{pkr(p.price)}</div>
                 <div className="text-xs opacity-70">one-time package</div>
               </div>
-              <p className="mt-2 text-sm opacity-80 line-clamp-2 leading-snug">{p.description}</p>
-              <div className="mt-auto pt-4">
-                <FallbackDetailDialog pkg={p} theme={theme} />
-              </div>
+              <p className="text-sm opacity-80 line-clamp-2 leading-snug">{p.description}</p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur font-semibold gap-1.5" size="sm">
+                    View Details & Buy <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-3xl">
+                  <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} text-white p-6 pb-8 rounded-t-3xl overflow-hidden`}>
+                    <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10 blur-xl" />
+                    <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-black/20 blur-xl" />
+                    <div className="relative">
+                      <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>{p.tagline}</div>
+                      <DialogTitle className="text-2xl font-black text-white">{p.name}</DialogTitle>
+                      <DialogDescription className="sr-only">{p.name} package details.</DialogDescription>
+                      <div className="mt-3 flex items-end gap-4">
+                        <div>
+                          <div className="text-4xl font-black">{pkr(p.price)}</div>
+                          <div className="text-xs opacity-70">one-time joining fee</div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-xs ${theme.accent}`}>daily earning</div>
+                          <div className="text-2xl font-black">{pkr(p.daily)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-5">
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { icon: TrendingUp, label: "Daily", value: pkr(p.daily) },
+                        { icon: CalendarDays, label: "Weekly", value: pkr(p.daily * 7) },
+                        { icon: Calendar, label: "Monthly", value: pkr(p.daily * 30) },
+                      ].map((e) => (
+                        <div key={e.label} className="rounded-2xl bg-primary/5 border border-primary/10 p-3 text-center">
+                          <e.icon className="h-4 w-4 text-primary mx-auto mb-1" />
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{e.label}</div>
+                          <div className="text-sm font-black mt-0.5">{e.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1.5">About this plan</div>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{p.description}</p>
+                    </div>
+                    <ul className="space-y-2">
+                      {p.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm">
+                          <div className="h-5 w-5 rounded-full bg-primary/10 grid place-items-center shrink-0 mt-0.5">
+                            <Check className="h-3 w-3 text-primary" />
+                          </div>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="border-t" />
+                    <BuySection pkg={p} />
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         );
       })}
     </div>
-  );
-}
-
-function FallbackDetailDialog({ pkg, theme }: { pkg: typeof FALLBACK[0]; theme: typeof CARD_THEMES[0] }) {
-  const weekly = pkg.daily * 7;
-  const monthly = pkg.daily * 30;
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur font-semibold gap-1.5" size="sm">
-          View Details & Buy <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-3xl overflow-hidden">
-        <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} text-white p-6 pb-8`}>
-          <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10 blur-xl" />
-          <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-black/20 blur-xl" />
-          <div className="relative">
-            <div className={`text-xs font-bold uppercase tracking-widest ${theme.accent} mb-1`}>{pkg.tagline}</div>
-            <DialogTitle className="text-2xl font-black text-white">{pkg.name}</DialogTitle>
-            <DialogDescription className="sr-only">Package details and purchase form</DialogDescription>
-            <div className="mt-3 flex items-end gap-4">
-              <div>
-                <div className="text-4xl font-black tracking-tight">{pkr(pkg.price)}</div>
-                <div className="text-xs opacity-70">one-time joining fee</div>
-              </div>
-              <div className="ml-auto text-right">
-                <div className={`text-xs ${theme.accent}`}>daily earning</div>
-                <div className="text-2xl font-black">{pkr(pkg.daily)}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-5 space-y-5">
-          {/* Earnings */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: TrendingUp, label: "Daily", value: pkr(pkg.daily) },
-              { icon: CalendarDays, label: "Weekly", value: pkr(weekly) },
-              { icon: Calendar, label: "Monthly", value: pkr(monthly) },
-            ].map((e) => (
-              <div key={e.label} className="rounded-2xl bg-primary/5 border border-primary/10 p-3 text-center">
-                <e.icon className="h-4 w-4 text-primary mx-auto mb-1" />
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{e.label}</div>
-                <div className="text-sm font-black mt-0.5">{e.value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Description */}
-          <div>
-            <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-1.5">About this plan</div>
-            <p className="text-sm leading-relaxed text-foreground/80">{pkg.description}</p>
-          </div>
-
-          {/* Features */}
-          <div>
-            <div className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-2.5 flex items-center gap-1.5">
-              <Zap className="h-3 w-3 text-primary" /> What's included
-            </div>
-            <ul className="space-y-2">
-              {pkg.features.map((f, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm">
-                  <div className="h-5 w-5 rounded-full bg-primary/10 grid place-items-center shrink-0 mt-0.5">
-                    <Check className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="leading-snug">{f}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="border-t" />
-
-          {/* Static buy note */}
-          <div className="rounded-xl bg-muted/50 border p-4 text-sm text-muted-foreground text-center leading-relaxed">
-            <div className="font-semibold text-foreground mb-1">How to buy</div>
-            Send <strong>{pkr(pkg.price)}</strong> to OPay <strong>{OPAY}</strong> or Mashreq Bank <strong>{MASHREQ}</strong> and contact admin with your screenshot to activate.
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
