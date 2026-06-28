@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, ListTodo, Video, Wallet, TrendingUp,
   User, Bell, Star, Shield, Crown, LogOut, Package,
-  MoreHorizontal, ChevronRight, ShieldAlert,
+  MoreHorizontal, ChevronRight, ShieldAlert, Headphones,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -52,6 +52,7 @@ function pkr(val: number) {
 export function AppShell({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: ctx } = useQuery({
@@ -138,7 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ── Desktop layout ──────────────────────────────── */}
       <div className="flex flex-1 min-h-0">
         <aside className="hidden lg:flex sticky top-0 h-screen w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex-col">
-          <DesktopSidebar ctx={ctx} onSignOut={signOut} pathname={pathname} strikeCount={activeStrikeCount} />
+          <DesktopSidebar ctx={ctx} onSignOut={signOut} pathname={pathname} strikeCount={activeStrikeCount} onOpenHelp={() => setHelpOpen(true)} />
         </aside>
 
         <main className="flex-1 min-w-0 pb-24 lg:pb-0">
@@ -149,7 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {isBanned ? <BannedScreen status={banStatus} onSignOut={signOut} /> : children}
           </div>
         </main>
-        <HelpCenter userId={ctx?.userId} />
+        <HelpCenter userId={ctx?.userId} open={helpOpen} onOpenChange={setHelpOpen} />
       </div>
 
       {/* ── Mobile bottom nav ──────────────────────────── */}
@@ -246,6 +247,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                     );
                   })}
 
+                  {/* Help & Support */}
+                  <button
+                    onClick={() => { setMoreOpen(false); setHelpOpen(true); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                  >
+                    <div className="relative">
+                      <Headphones className="h-5 w-5 text-violet-500" />
+                    </div>
+                    <span className="flex-1 text-left">Help & Support</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+
                   {ctx?.isAdmin && (
                     <Link
                       to="/admin"
@@ -335,11 +348,13 @@ function DesktopSidebar({
   onSignOut,
   pathname,
   strikeCount,
+  onOpenHelp,
 }: {
   ctx: Awaited<ReturnType<typeof getCurrentUserContext>> | undefined;
   onSignOut: () => void;
   pathname: string;
   strikeCount: number;
+  onOpenHelp: () => void;
 }) {
   return (
     <div className="flex flex-col w-full h-full">
@@ -386,8 +401,17 @@ function DesktopSidebar({
         )}
       </nav>
 
-      <div className="border-t p-3 space-y-2">
-        <div className="flex items-center gap-2 px-2">
+      <div className="border-t p-3 space-y-1">
+        {/* Help & Support */}
+        <button
+          onClick={onOpenHelp}
+          className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors min-h-11"
+        >
+          <Headphones className="h-4 w-4 text-violet-500" />
+          Help & Support
+        </button>
+
+        <div className="flex items-center gap-2 px-2 pt-1">
           <Avatar className="h-9 w-9">
             <AvatarImage src={ctx?.profile?.avatar_url ?? undefined} />
             <AvatarFallback className="bg-primary/10 text-primary font-semibold">

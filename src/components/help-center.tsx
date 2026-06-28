@@ -28,8 +28,22 @@ function timeAgo(ts: string) {
   return new Date(ts).toLocaleDateString();
 }
 
-export function HelpCenter({ userId }: { userId?: string }) {
-  const [open, setOpen] = useState(false);
+export function HelpCenter({
+  userId,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
+}: {
+  userId?: string;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    setInternalOpen(v);
+    externalOnOpenChange?.(v);
+  };
+  const isControlled = externalOpen !== undefined;
   const [view, setView] = useState<"picker" | "chat" | "history">("picker");
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [topic, setTopic] = useState("");
@@ -171,24 +185,26 @@ export function HelpCenter({ userId }: { userId?: string }) {
 
   return (
     <>
-      {/* ── Floating button ────────────────────────────────── */}
-      <button
-        onClick={() => setOpen(true)}
-        className={cn(
-          "fixed z-50 bottom-20 right-4 lg:bottom-6 lg:right-6",
-          "h-14 w-14 rounded-2xl shadow-2xl",
-          "bg-gradient-to-br from-violet-600 to-indigo-700 text-white",
-          "flex items-center justify-center transition-transform active:scale-95 hover:scale-105",
-        )}
-        aria-label="Help Center"
-      >
-        <Headphones className="h-6 w-6" />
-        {totalUnread > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center animate-pulse">
-            {totalUnread > 9 ? "9+" : totalUnread}
-          </span>
-        )}
-      </button>
+      {/* ── Floating button — only shown when not externally controlled ── */}
+      {!isControlled && (
+        <button
+          onClick={() => setOpen(true)}
+          className={cn(
+            "fixed z-50 bottom-20 right-4 lg:bottom-6 lg:right-6",
+            "h-14 w-14 rounded-2xl shadow-2xl",
+            "bg-gradient-to-br from-violet-600 to-indigo-700 text-white",
+            "flex items-center justify-center transition-transform active:scale-95 hover:scale-105",
+          )}
+          aria-label="Help Center"
+        >
+          <Headphones className="h-6 w-6" />
+          {totalUnread > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center animate-pulse">
+              {totalUnread > 9 ? "9+" : totalUnread}
+            </span>
+          )}
+        </button>
+      )}
 
       {/* ── Overlay ────────────────────────────────────────── */}
       {open && (
