@@ -188,10 +188,8 @@ function Index() {
                   className={`relative rounded-3xl overflow-hidden bg-gradient-to-br ${p.from} ${p.to} text-white shadow-xl group hover:scale-[1.02] transition-all duration-200`}
                 >
                   {p.badge && (
-                    <div className="absolute top-3 right-3">
-                      <span className="bg-white/20 backdrop-blur text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide uppercase border border-white/30">
-                        {p.badge}
-                      </span>
+                    <div className="relative z-10 text-center py-1.5 bg-white/25 backdrop-blur-sm border-b border-white/20 text-[10px] font-bold tracking-widest uppercase">
+                      {p.badge}
                     </div>
                   )}
                   <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-xl" />
