@@ -2,6 +2,7 @@ modules = ["nodejs-20", "web"]
 [agent]
 expertMode = true
 stack = "BEST_EFFORT_FALLBACK"
+integrations = ["javascript_database:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -39,3 +40,9 @@ deploymentTarget = "static"
 run = ["bun", "run", "preview"]
 build = ["bun", "run", "build"]
 publicDir = "dist"
+
+[userenv]
+
+[userenv.shared]
+VITE_SUPABASE_URL = "https://mirhamzbvpcvgkfvuvun.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pcmhhbXpidnBjdmdrZnZ1dnVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTg3MDUsImV4cCI6MjA5NTc3NDcwNX0.kzLb1BsSd-0xCpaGh8HbfFdmF6uIA0aDL6yU64dy3X4"
